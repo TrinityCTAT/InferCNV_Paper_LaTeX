@@ -35,8 +35,8 @@
 
 \begin{figure}[p]
 \centering
-\fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering Figure 6 pending}}
-\caption{\textbf{Specificity and scale.} \todo{RESULT PENDING} (a) Non-neutral call rate in PBMC from healthy donors, by cell type, before and after Bayesian filtering. (b) Run time and peak memory against number of cells, with and without the Bayesian model and for i6 and i3.}
+\includegraphics[width=\textwidth]{figures/fig6_specificity_scaling.png}
+\caption{\textbf{Specificity and scale.} (a) Fraction of genes $\times$ cells in a non-neutral i6 state in PBMC from a healthy donor (10x, 2,625 cells), which carry no CNAs, by cell type, before (open) and after (filled) Bayesian filtering, for four reference designs: a random half of every cell type as the reference, pooled into one group or given as one group per cell type; a random half of the CD4 T cells; and all B cells. ``Reference cells'' shows the calls in the reference cells themselves. (b) Wall time and (c) peak resident memory against the number of cells (nested down-samples of a 10x breast cancer atlas, 20\% reference cells, 4 threads) for i6 with the Bayesian filter (default), i6 without it, and i3 without it. (d) Time per step of the default run; the Bayesian model dominates.}
 \label{fig:6}
 \end{figure}
 
