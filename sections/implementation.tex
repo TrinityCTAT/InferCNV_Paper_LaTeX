@@ -33,6 +33,8 @@ Counts are converted into a residual expression signal in which large-scale CNAs
 
 Optional steps, off by default, Z-scale genes, remove genes at chromosome ends, prune outliers, split the reference into hierarchical clusters, and mask genes not differentially expressed between subclusters and references. The h-spike (Section 2.4) is carried through every transformation in parallel with the real data.
 
+Bounding the reference subtraction by the range of the reference group means prevents cell-type-specific expression from entering the residuals. In the example, a quarter of the genes differ by more than twofold between microglia and oligodendrocytes. Subtracting a single pooled mean instead raised the residual noise 1.4-fold in tumour cells and 1.7-fold in reference cells (Supplementary Fig.~\ref{fig:S3}). Smoothing raises the signal-to-noise of a CNA roughly as the square root of the number of genes averaged: the default 101-gene triangular window (about 76 effective genes) reduced the residual noise 2.2-fold relative to a 21-gene window, without visibly blurring arm-level events.
+
 \subsection{Subclustering}
 
 Per-cell profiles are noisy, so by default states are predicted for subclusters of cells (\texttt{analysis\_mode\ =\ "subclusters"}). Cells are partitioned within each observation group (\texttt{cluster\_by\_groups\ =\ TRUE}) or across pooled observations; each reference group is subclustered on its own. Genes with extreme residuals in the reference (mean \textbar Z\textbar{} ≥ 0.8, \texttt{z\_score\_filter}) are left out of the clustering.
@@ -59,11 +61,15 @@ The HMM does not say how confident its assignments are. Following HoneyBADGER \c
 
 Regions whose mean posterior probability of the neutral state exceeds \texttt{BayesMaxPNormal} (default 0.5) are reset to neutral. With \texttt{reassignCNVs\ =\ TRUE} (default), each remaining region is reassigned to its most probable state. Setting \texttt{BayesMaxPNormal\ =\ 0} skips the model. The filtered state calls are converted to representative values (0, 0.5, 1, 1.5, 2 and 3 for i6) for plotting and output.
 
+The region-level posterior probability of the neutral state approximates the fraction of a subcluster's cells that look neutral (Supplementary Fig.~\ref{fig:S2}). In the example data no region exceeded the default threshold of 0.5. The 12 small 1.5× calls that were removed had the neutral state as their most probable state and were reset by the reassignment step. Lower thresholds remove the remaining low-amplitude gains: 35 of 72 regions remain at 0.3 and 21 at 0.2, and the 1p/19q co-deletion and the large clonal events are retained at all thresholds.
+
 \subsection{Denoising and outputs}
 
 Denoising (\texttt{denoise\ =\ TRUE}; off by default) clarifies the residual heatmap: values within the reference mean ± 1.5 times the mean per-cell standard deviation of the reference cells (\texttt{sd\_amplifier}) are set to the reference mean (≈1), so that only deviations larger than those in normal cells remain. A fixed half-width (\texttt{noise\_filter}) or logistic shrinkage (\texttt{noise\_logistic}) can be used instead. Denoising does not affect the HMM calls. A median filter (\texttt{apply\_median\_filtering}) is a separate function outside \texttt{run()}.
 
 Outputs are heatmaps (PNG or PDF; per step with \texttt{plot\_steps}), region and gene tables of HMM predictions, posterior state probabilities, and optionally the residual matrices (\texttt{write\_expr\_matrix}) and Newick dendrograms (\texttt{write\_phylo}). \texttt{add\_to\_seurat} transfers per-cell CNA calls and subcluster labels to the metadata of a Seurat object.
+
+With the default setting (\texttt{sd\_amplifier = 1.5}), 86\% of the reference-cell values and 69\% of the malignant-cell values fall within the noise band and are set to the reference mean, so that arm-level CNAs stand out (Supplementary Fig.~\ref{fig:S4}). A wider band (\texttt{sd\_amplifier = 3}) keeps only the strongest events. Logistic shrinkage replaces the hard cut-off with a gradual one. The median filter, applied after \texttt{run()} within each subcluster, gives the smoothest display, at the cost of single-cell detail.
 
 \subsection{Engineering}
 

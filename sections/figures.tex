@@ -47,5 +47,27 @@
 \label{fig:S1}
 \end{figure}
 
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/figS_bayes.png}
+\caption{\textbf{Bayesian filtering of HMM calls (extdata oligodendroglioma example).} \textbf{a}, The latent mixture model fitted to each predicted CNV region in each subcluster. The residuals $x_{ij}$ of the region's genes in each cell are normal with the mean $\mu_k$ and precision $\tau_k$ of the cell's state $\varepsilon_j$, which are fixed from the h-spike. Cell states are drawn from mixing proportions $\theta$ with a flat Dirichlet prior. P(normal) is the posterior mean of $\theta$ for the neutral state. \textbf{b}, Posterior distributions of $\theta$ (6 chains × 1,000 draws) for six MGH36 regions, from confident (1p, 0.5×; 7q, 2×) to marginal (15q, 1.5×, P(normal) = 0.48). \textbf{c}, 1 $-$ P(normal) for the 72 regions called by the i6 HMM, along the genome (one row per Leiden subcluster, one per tumour). \textbf{d}, P(normal) of each region, coloured by HMM state. Lines mark the BayesMaxPNormal values in \textbf{e--f}. Triangles: regions whose most probable state is neutral, which \texttt{reassignCNVs} resets to 1× even when P(normal) is below the threshold. \textbf{e}, i6 calls after filtering with BayesMaxPNormal = 0 (model off), 0.5 (default; 0.8 gives the same calls), 0.3 and 0.2. \textbf{f}, Number of non-neutral regions retained as a function of BayesMaxPNormal.}
+\label{fig:S2}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/figS_refsmooth.png}
+\caption{\textbf{Reference subtraction with several reference groups, and smoothing.} \textbf{a}, Mean log expression (step 6) of four microglia/macrophage- and four oligodendrocyte-specific genes in the two reference groups (squares) and the four tumours (circles). Grey bands span the reference group means (the bounds); dashed lines show the mean of the group means. \textbf{b}, Mean residual of each tumour after the first reference subtraction (step 10). With \texttt{ref\_subtract\_use\_mean\_bounds = TRUE} (default), values within the bounds are set to 0. Without the bounds, the mean of the group means is subtracted. \textbf{c}, Residuals after smoothing, centring and the second subtraction (step 16) with and without the bounds (same colour scale). \textbf{d}, Mean per-cell SD of the step-16 residuals per cell group. \textbf{e}, Simulation: distributions of the mean residual over n independent genes at copy-number factors 0.5, 1 and 1.5. Counts are negative binomial, with the reference gene means and dispersion of the example data. \textbf{f}, Signal-to-noise (0.5× against 1×) against the number of genes averaged. Shown are the simulation, the $\sqrt{n}$ prediction, and the example data: MGH36 1p loss at \texttt{window\_length} 21, 51, 101 and 201, plotted at the effective number of genes of the triangular kernel (16, 39, 76, 151). \textbf{g}, Step-16 residuals for the four window lengths (colour scale as in c). \textbf{h}, Residuals along chr1 and chr19 of one MGH36 cell and one oligodendrocyte for each window length.}
+\label{fig:S3}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/figS_denoise.png}
+\caption{\textbf{Denoising options for the residual heatmap (extdata example).} \textbf{a}, Residuals (fold change, before denoising) of reference and malignant cells. Bars show the ranges set to the reference mean by the default dynamic threshold (reference mean ± 1.5 × the mean per-cell SD of the reference cells, \texttt{sd\_amplifier = 1.5}), by \texttt{sd\_amplifier = 3}, and by a fixed \texttt{noise\_filter = 0.1}. \textbf{b}, Output against input value for each option: the hard thresholds and the logistic shrinkage (\texttt{noise\_logistic = TRUE}, midpoint at the same threshold). \textbf{c--i}, Residual heatmaps without denoising (c), with the default (d), with \texttt{sd\_amplifier} 1 and 3 (e, f), with \texttt{noise\_filter = 0.1} (g), and with logistic shrinkage at \texttt{sd\_amplifier} 1.5 and 3 (h, i). \textbf{j, k}, \texttt{apply\_median\_filtering()} (a separate function, not part of \texttt{run()}; \texttt{window\_size = 7}) applied to c and to i. All panels use the same colour scale. Denoising changes only the displayed residuals; the HMM calls are computed before it and are unaffected.}
+\label{fig:S4}
+\end{figure}
+
+
 % Supplementary Table S2: Metrics against DNA-based copy number.
 % For each sample and score: number of malignant cells and bins, maximal F1, sensitivity and precision for gains and losses at the optimum, AUC and partial AUC for gains and losses, Pearson r; with the values reported by Schmid et al.~for inferCNV v1.10. (From analyses/fig4/metrics\_fig4.tsv and schmid2025\_reported\_infercnv\_v1.10.tsv.)
