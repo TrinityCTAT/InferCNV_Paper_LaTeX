@@ -1,3 +1,219 @@
 \section{Supplementary Methods}\label{sec:supplementary_methods}
 
-A step-by-step description of \texttt{run()}, with all defaults, branch conditions, checkpoint file names and resume behaviour, and with references to the source code, is given in Supplementary Methods (manuscript/supplementary\_algorithm.md). Its step numbers follow the expression-only pipeline of 22 steps. In the release, which also contains the allele model, two allele steps are inserted after depth normalisation, so steps 4--20 of the expression pipeline become steps 6--22, the allele and combined-model steps are 23--28, and the masking of non-differentially expressed genes and denoising become steps 29 and 30. \todo{Supplement to be renumbered or given a mapping table before posting.}
+% straight single quote inside \texttt (R string defaults)
+\providecommand{\sq}{\textquotesingle}
+
+\begingroup
+% allow line breaks after underscores in long parameter and file names
+\let\usorig\_
+\renewcommand{\_}{\usorig\allowbreak}
+\setlength{\emergencystretch}{3em}
+
+This section describes \texttt{run()} of the inferCNV release step by step, with the defaults of the code. Parameters are listed in Supplementary Table~\ref{tab:S1}.
+
+\subsection*{Numbering, tracks and checkpoints}
+
+\texttt{run()} keeps a step counter and logs each step as \texttt{STEP NN: <message>}; the messages are quoted below. There are 30 steps. A step whose condition is false is skipped, but its number is still used, so the numbers are fixed for all settings. Steps 4--5 and 23--28 belong to the allele-aware extension, which runs only when the input is an \texttt{infercnv\_allele} object and is described separately; for expression input they do nothing.
+
+There are two tracks of output. The expression track (\texttt{infercnv\_obj}) passes through steps 1--18 and the optional steps 29--30; it is what \texttt{run()} returns and what the final heatmap \texttt{infercnv.png} shows. Steps 19--22 work on a separate HMM object, which is written to files and heatmaps but not returned.
+
+With \texttt{save\_rds\ =\ TRUE} (default), each step that runs saves its object as a checkpoint \texttt{<out\_dir>/\allowbreak NN\_<name><token>.infercnv\_obj}. The token is empty, or \texttt{HMMi6}/\texttt{HMMi3} when the HMM is on; \texttt{.rand\_trees} is appended from step 9 on with random-tree subclustering, and \texttt{.<method>} from step 17 on with another subclustering method. The HMM steps add \texttt{.hmm\_mode-<analysis\_mode>}. With \texttt{plot\_steps\ =\ TRUE}, most steps also write a heatmap \texttt{infercnv.NN\_<name>}.
+
+\subsection*{Object creation}
+
+\texttt{CreateInfercnvObject()} reads the counts, the cell annotations and the gene order file. Genes on chromosomes in \texttt{chr\_exclude} (default chrX, chrY, chrM) are removed, and the matrix is restricted to genes in the gene order file and ordered by position. Every annotated cell must be present in the matrix. Cells whose total counts fall outside \texttt{min\_max\_counts\_per\_cell} (default 100 to +Inf) are removed. With \texttt{max\_cells\_per\_group}, each annotation group is randomly subsampled; this happens before \texttt{run()} and so is not covered by its \texttt{seed}. Groups named in \texttt{ref\_group\_names} become the references; all other groups are observations. Sparse \texttt{dgCMatrix} input stays sparse until smoothing.
+
+\subsection*{Argument handling}
+
+Arguments with a list of choices take the first value by default (Table~\ref{tab:S1}). The i6 HMM cannot be combined with \texttt{smooth\_method\ =\ "coordinates"}; with coordinate smoothing, a \texttt{window\_length} below 10,000 is replaced by 10,000,000 bp. With \texttt{analysis\_mode\ =\ "cells"}, \texttt{HMM\_report\_by} is set to \texttt{"cell"}, and with a partition method other than Leiden, \texttt{per\_chr\_hmm\_subclusters} is turned off. \texttt{out\_dir} is required. \texttt{num\_threads} sets the number of cores for the parallel steps. When \texttt{seed} is set, R's generator is switched to L'Ecuyer-CMRG and seeded, the JAGS chains are seeded from it, and the caller's generator state is restored on exit; results are then reproducible for a fixed \texttt{seed} and \texttt{num\_threads}. The arguments are stored in the object, where resume mode compares them.
+
+\subsection*{Steps of \texttt{run()}}
+
+\begin{enumerate}
+\tightlist
+\item[\textbf{1}] \textbf{incoming data.} The object is saved as received.
+
+\item[\textbf{2}] \textbf{Removing lowly expressed genes and SNPs.} Genes are removed if their mean count over all cells (references and observations) is below \texttt{cutoff} (default 1; 0.1 is typically used for 10x data), or if fewer than \texttt{min\_cells\_per\_gene} (default 3) cells, again counted over all cells, have a nonzero count. SNPs are filtered here for allele input.
+
+\item[\textbf{3}] \textbf{normalization by sequencing depth.} Each cell is divided by its total count and multiplied by the median total count. Only when \texttt{HMM\ =\ TRUE} and \texttt{HMM\_type\ =\ "i6"}, the h-spike is built: ten synthetic chromosomes of 400 genes alternate between neutral and the levels 0.01, 0.5, 1.5, 2 and 3, a further neutral chromosome takes the remaining genes, gene means are sampled with replacement from the data, and 100 normal and 100 altered cells are simulated for each reference group (or for the pooled references with \texttt{hspike\_aggregate\_normals\ =\ TRUE}) from the reference mean--variance and dropout trends (\texttt{sim\_method\ =\ "meanvar"}), normalised to the median reference library size. Without references, the observations serve as the normal proxy. Every later transformation is repeated on the h-spike.
+
+\item[\textbf{4--5}] \textbf{mapping SNPs to genes.} Allele-aware extension, described separately.
+
+\item[\textbf{6}] \textbf{log transformation of data.} $\log_2(x+1)$.
+
+\item[\textbf{7}] \textbf{scaling all expression data.} Only with \texttt{scale\_data\ =\ TRUE} (default \texttt{FALSE}): each gene is Z-scaled across cells.
+
+\item[\textbf{8}] \textbf{splitting reference data into \textit{n} clusters.} Only when \texttt{num\_ref\_groups} is set; requires references. All reference cells are clustered together (\texttt{hclust\_method}, default Ward.D2) and the tree is cut into \texttt{num\_ref\_groups} groups, which replace the reference annotation groups.
+
+\item[\textbf{9}] \textbf{computing tumor subclusters via random\_trees.} Only with \texttt{analysis\_mode\ =\ "subclusters"} and \texttt{tumor\_subcluster\_partition\_method\ =\ "random\_trees"}. On a reference-subtracted copy of the log data, each observation group (or the pooled observations with \texttt{cluster\_by\_groups\ =\ FALSE}) and each reference group is smoothed with a 101-gene running mean over the whole genome, median-centred and clustered hierarchically. The maximum tree height is compared with a null from 100 permutations in which each gene's values are shuffled across cells; if the empirical $p \leq$ \texttt{tumor\_subcluster\_pval} (default 0.1), the top split is accepted and each branch is tested recursively, to depth 3 and down to clusters of 10 cells. Only the subcluster assignments are kept.
+
+\item[\textbf{10}] \textbf{removing average of reference data (before smoothing).} For each gene the mean is computed within each reference group. With \texttt{ref\_subtract\_use\_mean\_bounds\ =\ TRUE} (default), values above the largest group mean have it subtracted, values below the smallest have it subtracted, and values in between are set to 0; otherwise the mean of the group means is subtracted. Without references, the mean over all observations is used.
+
+\item[\textbf{11}] \textbf{apply max centered expression threshold.} Values are clipped to $\pm$\texttt{max\_centered\_threshold} (default 3). \texttt{"auto"} uses the mean of the absolute mean per-cell minimum and maximum; \texttt{NA} skips the step.
+
+\item[\textbf{12}] \textbf{Smoothing data per cell by chromosome.} Each chromosome of each cell is smoothed over \texttt{window\_length} (default 101) genes. \texttt{pyramidinal} (default): a triangular weighted moving average, with weights rising linearly from 1 at the window edges to $(w+1)/2$ at the centre and a truncated, renormalised kernel at chromosome ends. \texttt{runmeans}: an unweighted running mean. \texttt{coordinates}: for each gene, genes within \texttt{window\_length} bp of its midpoint are averaged with weights decreasing linearly with distance.
+
+\item[\textbf{13}] \textbf{re-centering data across chromosome after smoothing.} Each cell is centred by subtracting its median over all genes.
+
+\item[\textbf{14}] \textbf{removing average of reference data (after smoothing).} As step 10, on the smoothed, centred data.
+
+\item[\textbf{15}] \textbf{removing genes at chr ends.} Only with \texttt{remove\_genes\_at\_chr\_ends\ =\ TRUE} (default \texttt{FALSE}) and not with coordinate smoothing. $(\texttt{window\_length}-1)/2$ genes are removed from each end of each chromosome, or a third of the genes at each end of a chromosome with fewer than twice that number.
+
+\item[\textbf{16}] \textbf{invert log2(FC) to FC.} Values are converted with $2^x$, so that 1 is neutral.
+
+\item[\textbf{17}] \textbf{computing tumor subclusters via \textit{method}} or \textbf{Clustering samples (not defining tumor subclusters).} With \texttt{analysis\_mode\ =\ "subclusters"} and a method other than random trees, cells are partitioned within each observation group (or within the pooled observations with \texttt{cluster\_by\_groups\ =\ FALSE}); each reference group is partitioned on its own. If references exist and \texttt{z\_score\_filter} $> 0$ (default 0.8), the reference matrix is Z-scored and genes with mean $|Z| \geq$ \texttt{z\_score\_filter} over reference cells are left out of the clustering, though not out of the data.
+\begin{itemize}
+\tightlist
+\item \texttt{leiden} (default): groups of fewer than 3 cells are left as they are, and groups of at most \texttt{k\_nn} (default 20) cells form one subcluster. Otherwise a shared nearest-neighbour graph is built with Seurat (variable features, scaling, 10 principal components, \texttt{k\_nn} neighbours; \texttt{leiden\_method\ =\ "PCA"}), or a $k$-nearest-neighbour graph (\texttt{"simple"}, also the fallback if Seurat's feature selection fails), and partitioned with \texttt{igraph::cluster\_leiden} using the constant Potts model (\texttt{leiden\_function\ =\ "CPM"}). With \texttt{leiden\_resolution\ =\ "auto"}, the resolution is $(11.98/n)^{1/1.165}$ for $n$ cells. A dendrogram for display is built by hierarchical clustering within each Leiden cluster.
+\item \texttt{qnorm}, \texttt{pheight}, \texttt{qgamma}: the hierarchical tree is cut at the $1-p$ quantile of a normal fit to the tree heights, at $p$ times the maximum height, or at the $1-p$ quantile of a gamma fit, with $p$ = \texttt{tumor\_subcluster\_pval}. (\texttt{shc} is accepted but not implemented.)
+\item Per-chromosome subclusters (\texttt{per\_chr\_hmm\_subclusters\ =\ TRUE}, Leiden only): cells are also partitioned separately for each chromosome (\texttt{leiden\_method\_per\_chr\ =\ "simple"}, \texttt{leiden\_function\_per\_chr\ =\ "modularity"}, resolution 1); references are included only with \texttt{per\_chr\_hmm\_subclusters\_references\ =\ TRUE}. These partitions are saved to an extra checkpoint and used only by the i6 HMM.
+\end{itemize}
+With \texttt{analysis\_mode} \texttt{"samples"} or \texttt{"cells"}, each group is clustered hierarchically and kept as a single subcluster. After random-tree subclustering (step 9) this step does nothing. A preliminary checkpoint (\texttt{preliminary.infercnv\_obj}) and heatmap (\texttt{infercnv.preliminary.png}, unless \texttt{no\_prelim\_plot}) are written.
+
+\item[\textbf{18}] \textbf{Removing outliers.} Only with \texttt{prune\_outliers\ =\ TRUE} (default \texttt{FALSE}). Values are clipped to \texttt{outlier\_lower\_bound}/\texttt{outlier\_upper\_bound} if both are given, and otherwise (\texttt{outlier\_method\_bound\ =\ "average\_bound"}) to the mean per-cell minimum and maximum.
+
+\item[\textbf{19}] \textbf{expression-based HMM CNV prediction.} Only with \texttt{HMM\ =\ TRUE} (default \texttt{FALSE}). Each chromosome is decoded by Viterbi with transition probability \texttt{HMM\_transition\_prob} (default $10^{-6}$); for a group of cells the input is the group's mean residual.
+\begin{itemize}
+\tightlist
+\item i6 (default): six states with emission means from the processed h-spike chromosomes at levels 0 (0.01), 0.5, 1, 1.5, 2 and 3; off-diagonal transitions $t$, self-transitions $1-5t$. For groups, each state's standard deviation is taken from a fit of $\log$ SD on $\log$ number of cells, estimated from repeated subsamples of 1--100 h-spike cells.
+\item i3: three states; the neutral mean and standard deviation are those of the reference residuals (all cells without references), and the loss and gain means lie at the distance separable at \texttt{HMM\_i3\_pval} (default 0.05), or are estimated from a Kolmogorov--Smirnov statistic with \texttt{HMM\_i3\_use\_KS\ =\ TRUE} (default \texttt{FALSE}).
+\item Grouping follows \texttt{analysis\_mode}: one HMM per subcluster, including reference subclusters (the default; with i6 and per-chromosome subclusters, per chromosome partition, followed by a consensus within each regular subcluster), per cell, or per annotation group.
+\end{itemize}
+Region and gene reports (\texttt{19\_HMM\_pred<token>.pred\_cnv\_regions.dat}, \texttt{.pred\_cnv\_genes.dat}, \texttt{.cell\_groupings}) are written at the level set by \texttt{HMM\_report\_by} (default subcluster).
+
+\item[\textbf{20}] \textbf{Run Bayesian Network Model on HMM predicted CNVs.} Only with \texttt{HMM\ =\ TRUE} and \texttt{BayesMaxPNormal} $> 0$ (default 0.5), and if the HMM predicted more than one state. Each predicted region is fitted with the latent mixture model in JAGS (six chains for i6, three for i3; 500 adaptation, 200 burn-in and 1,000 sampling iterations), with regions run in parallel. Output goes to \texttt{BayesNetOutput.<token>/}; posterior probabilities are plotted with \texttt{plot\_probabilities\ =\ TRUE} (default), and convergence diagnostics with \texttt{diagnostics\ =\ TRUE}.
+
+\item[\textbf{21}] \textbf{Filter HMM predicted CNVs based on the Bayesian Network Model results and BayesMaxPNormal.} Same condition as step 20. Regions whose mean posterior probability of the neutral state exceeds \texttt{BayesMaxPNormal} are reset to neutral; with \texttt{reassignCNVs\ =\ TRUE} (default), each remaining region is reassigned to its most probable state. The filtered reports are written as \texttt{HMM\_CNV\_predictions.<token>.Pnorm\_<p>.*}.
+
+\item[\textbf{22}] \textbf{Converting HMM-based CNV states to repr expr vals.} Only with \texttt{HMM\ =\ TRUE}. States are mapped to representative values (i6: 0, 0.5, 1, 1.5, 2, 3; i3: 0.5, 1, 1.5) and plotted.
+
+\item[\textbf{23--28}] \textbf{Allele and combined models.} Allele-aware extension, described separately.
+
+\item[\textbf{29}] \textbf{Identify and mask non-DE genes.} Only with \texttt{mask\_nonDE\_genes\ =\ TRUE} (default \texttt{FALSE}); requires references. Each observation subcluster is compared with each reference group gene by gene (\texttt{test.use\ =\ "wilcoxon"}, with a small jitter; alternatives Welch's \texttt{t} and the \texttt{perm} test of the coin package), with Benjamini--Hochberg adjustment at \texttt{mask\_nonDE\_pval} (default 0.05). Genes not DE in any (\texttt{require\_DE\_all\_normals\ =\ "any"}), most or all comparisons are set to the mean of the whole matrix; subclusters of fewer than 5 cells are not masked.
+
+\item[\textbf{30}] \textbf{Denoising.} Only with \texttt{denoise\ =\ TRUE} (default \texttt{FALSE}); acts on the expression track only. Values within the reference mean $\pm$ \texttt{sd\_amplifier} (default 1.5) times the mean per-cell standard deviation of the reference cells, or within $\pm$\texttt{noise\_filter} if that is set and positive, are set to the reference mean ($\approx 1$). With \texttt{noise\_logistic\ =\ TRUE}, values are instead shrunk towards the mean by a logistic function centred on the same bound.
+\end{enumerate}
+
+At the end, \texttt{run.final.infercnv\_obj} is saved (\texttt{save\_final\_rds\ =\ TRUE}) and, unless \texttt{no\_plot}, the final heatmap \texttt{infercnv.png} is drawn centred on 1 with automatic scale limits (\texttt{final\_center\_val}, \texttt{final\_scale\_limits}). \texttt{run()} returns the expression-track object.
+
+\subsection*{Partial runs and resuming}
+
+\texttt{up\_to\_step} (default 100, i.e.\ all 30 steps) returns the expression object after the given step; a stop within steps 19--22 also returns the expression object. With \texttt{resume\_mode\ =\ TRUE} (default), \texttt{run()} first scans the expected checkpoints in \texttt{out\_dir} from the last step backwards, and reuses a checkpoint only if every argument that affects steps up to and including it matches the arguments stored in the file. Expression checkpoints restore the expression object and HMM-track checkpoints the HMM and Bayesian objects; steps up to the latest matching checkpoint are skipped. With per-chromosome subclusters, the step 17 checkpoint is reused only if its per-chromosome file also exists.
+
+% ------------------------------------------------------------------
+\setcounter{table}{0}
+\renewcommand{\thetable}{S\arabic{table}}
+
+{\footnotesize\singlespacing
+\setlength{\LTcapwidth}{\linewidth}
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.31\linewidth}>{\raggedright\arraybackslash}p{0.25\linewidth}>{\raggedright\arraybackslash}p{0.38\linewidth}@{}}
+\caption{\textbf{Parameters of \texttt{run()} for the expression model.} Defaults are given as written in the code; for arguments with a list of choices, the first value is used. Parameters marked $\dagger$ belong to \texttt{CreateInfercnvObject()}. Allele-model arguments (\texttt{snp\_min\_coverage}, \texttt{min\_cells\_per\_snp}, \texttt{allele\_mode}, \texttt{combined\_method}, \texttt{collapse\_method}) are described separately.}\label{tab:S1}\\
+\toprule
+Parameter & Default & Meaning \\
+\midrule
+\endfirsthead
+\multicolumn{3}{@{}l}{\textit{Table~\ref{tab:S1}, continued}}\\
+\toprule
+Parameter & Default & Meaning \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r@{}}{\textit{continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\multicolumn{3}{@{}l}{\textbf{Inputs and filtering}}\\
+\texttt{out\_dir} & \texttt{NULL} & Output directory; required. \\
+\texttt{cutoff} & \texttt{1} & Minimum mean count of a gene over all cells (step 2). \\
+\texttt{min\_cells\_per\_gene} & \texttt{3} & Minimum number of cells, over all cells, with a nonzero count (step 2). \\
+\texttt{min\_max\_counts\_per\_cell}$^\dagger$ & \texttt{c(100, +Inf)} & Range of total counts for a cell to be kept. \\
+\texttt{chr\_exclude}$^\dagger$ & \texttt{c(\sq chrX\sq, \sq chrY\sq, \sq chrM\sq)} & Chromosomes whose genes are removed. \\
+\texttt{max\_cells\_per\_group}$^\dagger$ & \texttt{NULL} & Random subsampling of each annotation group to at most this many cells. \\
+\addlinespace
+\multicolumn{3}{@{}l}{\textbf{Normalisation and smoothing}}\\
+\texttt{scale\_data} & \texttt{FALSE} & Z-scale each gene after the log transform (step 7). \\
+\texttt{max\_centered\_threshold} & \texttt{3} & Clip residuals to $\pm$ this value; \texttt{"auto"} or \texttt{NA} (off) (step 11). \\
+\texttt{window\_length} & \texttt{101} & Smoothing window, in genes (in bp for \texttt{coordinates}) (step 12). \\
+\texttt{smooth\_method} & \texttt{c(\sq pyramidinal\sq, \sq runmeans\sq, \sq coordinates\sq)} & Triangular weighted, unweighted, or base-pair window smoothing. \\
+\texttt{remove\_genes\_at\_chr\_ends} & \texttt{FALSE} & Remove $(\texttt{window\_length}-1)/2$ genes at each chromosome end (step 15). \\
+\addlinespace
+\multicolumn{3}{@{}l}{\textbf{Reference subtraction}}\\
+\texttt{ref\_subtract\_use\_mean\_bounds} & \texttt{TRUE} & Subtract the nearest bound of the reference group means; set values between them to 0 (steps 10, 14). \\
+\texttt{num\_ref\_groups} & \texttt{NULL} & Split the references into this many hierarchical clusters (step 8). \\
+\texttt{hclust\_method} & \texttt{\sq ward.D2\sq} & Linkage for all hierarchical clustering of cells. \\
+\addlinespace
+\multicolumn{3}{@{}l}{\textbf{Subclustering}}\\
+\texttt{analysis\_mode} & \texttt{c(\sq subclusters\sq, \sq samples\sq, \sq cells\sq)} & Grouping of cells for the HMM and masking. \\
+\texttt{tumor\_subcluster\_partition\_method} & \texttt{c(\sq leiden\sq, \sq random\_trees\sq, \sq qnorm\sq, \sq pheight\sq, \sq qgamma\sq, \sq shc\sq)} & Subclustering method (\texttt{shc} not implemented). \\
+\texttt{tumor\_subcluster\_pval} & \texttt{0.1} & Significance or quantile for random trees, \texttt{qnorm}, \texttt{pheight}, \texttt{qgamma}. \\
+\texttt{cluster\_by\_groups} & \texttt{TRUE} & Subcluster each observation group separately; otherwise pool observations. \\
+\texttt{cluster\_references} & \texttt{TRUE} & Cluster reference cells within their groups (heatmap order). \\
+\texttt{k\_obs\_groups} & \texttt{1} & Number of groups into which pooled observations are cut for display. \\
+\texttt{k\_nn} & \texttt{20} & Neighbours for the Leiden graph. \\
+\texttt{leiden\_method} & \texttt{c("PCA", "simple")} & Graph: Seurat shared nearest neighbours on PCs, or plain $k$NN. \\
+\texttt{leiden\_function} & \texttt{c("CPM", "modularity")} & Leiden objective. \\
+\texttt{leiden\_resolution} & \texttt{"auto"} & Resolution; \texttt{"auto"} gives $(11.98/n)^{1/1.165}$. \\
+\texttt{per\_chr\_hmm\_subclusters} & \texttt{FALSE} & Also partition cells per chromosome for the i6 HMM (Leiden only). \\
+\texttt{per\_chr\_hmm\_subclusters\_\allowbreak references} & \texttt{FALSE} & Include references in the per-chromosome partitions. \\
+\texttt{leiden\_method\_per\_chr} & \texttt{c("simple", "PCA")} & Graph for per-chromosome partitions. \\
+\texttt{leiden\_function\_per\_chr} & \texttt{c("modularity", "CPM")} & Objective for per-chromosome partitions. \\
+\texttt{leiden\_resolution\_per\_chr} & \texttt{1} & Resolution for per-chromosome partitions. \\
+\texttt{z\_score\_filter} & \texttt{0.8} & Exclude genes with mean reference $|Z| \geq$ this value from clustering; 0 disables. \\
+\texttt{inspect\_subclusters} & \texttt{TRUE} & Plot subcluster assignments after subclustering (steps 9, 17). \\
+\addlinespace
+\multicolumn{3}{@{}l}{\textbf{Hidden Markov model}}\\
+\texttt{HMM} & \texttt{FALSE} & Run the HMM and Bayesian filter (steps 19--22). \\
+\texttt{HMM\_type} & \texttt{c(\sq i6\sq, \sq i3\sq)} & Six-state (h-spike calibrated) or three-state model. \\
+\texttt{HMM\_transition\_prob} & \texttt{1e-6} & Probability of a transition between states. \\
+\texttt{HMM\_report\_by} & \texttt{c("subcluster", "consensus", "cell")} & Level at which regions are reported. \\
+\texttt{HMM\_i3\_pval} & \texttt{0.05} & State overlap for placing the i3 loss and gain means. \\
+\texttt{HMM\_i3\_use\_KS} & \texttt{FALSE} & Use a Kolmogorov--Smirnov statistic for the i3 means. \\
+\texttt{sim\_method} & \texttt{\sq meanvar\sq} & h-spike simulation method. \\
+\texttt{hspike\_aggregate\_normals} & \texttt{FALSE} & Simulate the h-spike from pooled references. \\
+\texttt{sim\_foreground} & \texttt{FALSE} & Developer option. \\
+\addlinespace
+\multicolumn{3}{@{}l}{\textbf{Bayesian filter}}\\
+\texttt{BayesMaxPNormal} & \texttt{0.5} & Reset regions with mean posterior P(neutral) above this; 0 skips the model. \\
+\texttt{reassignCNVs} & \texttt{TRUE} & Reassign remaining regions to their most probable state. \\
+\texttt{plot\_probabilities} & \texttt{TRUE} & Plot posterior state probabilities. \\
+\texttt{diagnostics} & \texttt{FALSE} & Write MCMC diagnostic plots. \\
+\addlinespace
+\multicolumn{3}{@{}l}{\textbf{Outliers, masking, denoising and plots}}\\
+\texttt{prune\_outliers} & \texttt{FALSE} & Clip outliers (step 18). \\
+\texttt{outlier\_method\_bound} & \texttt{"average\_bound"} & Bounds from the mean per-cell minimum and maximum. \\
+\texttt{outlier\_lower\_bound}, \texttt{outlier\_upper\_bound} & \texttt{NA} & Fixed bounds, used if both are set. \\
+\texttt{mask\_nonDE\_genes} & \texttt{FALSE} & Mask genes not DE between subclusters and references (step 29). \\
+\texttt{mask\_nonDE\_pval} & \texttt{0.05} & Adjusted p-value threshold for DE. \\
+\texttt{test.use} & \texttt{\sq wilcoxon\sq} & DE test (\texttt{wilcoxon}, \texttt{t}, \texttt{perm}). \\
+\texttt{require\_DE\_all\_normals} & \texttt{"any"} & In how many reference comparisons a gene must be DE (\texttt{any}, \texttt{most}, \texttt{all}). \\
+\texttt{denoise} & \texttt{FALSE} & Set values near the reference mean to it (step 30). \\
+\texttt{noise\_filter} & \texttt{NA} & Fixed half-width of the noise band; overrides \texttt{sd\_amplifier}. \\
+\texttt{sd\_amplifier} & \texttt{1.5} & Half-width of the noise band in mean reference SDs. \\
+\texttt{noise\_logistic} & \texttt{FALSE} & Logistic shrinkage instead of a hard cut-off. \\
+\texttt{final\_scale\_limits} & \texttt{NULL} & Colour limits of the final heatmap (\texttt{NULL}: \texttt{"auto"}). \\
+\texttt{final\_center\_val} & \texttt{NULL} & Centre of the final heatmap (\texttt{NULL}: 1). \\
+\texttt{no\_plot} & \texttt{FALSE} & Write no images. \\
+\texttt{no\_prelim\_plot} & \texttt{FALSE} & Skip the preliminary heatmap. \\
+\texttt{plot\_steps} & \texttt{FALSE} & Plot a heatmap after each step. \\
+\texttt{output\_format} & \texttt{"png"} & \texttt{"png"}, \texttt{"pdf"}, or \texttt{NA} (text outputs only). \\
+\texttt{png\_res} & \texttt{300} & PNG resolution (dpi). \\
+\texttt{useRaster} & \texttt{TRUE} & Rasterise heatmaps. \\
+\texttt{plot\_chr\_scale} & \texttt{FALSE} & Scale chromosome widths by length. \\
+\texttt{chr\_lengths} & \texttt{NULL} & Chromosome lengths for \texttt{plot\_chr\_scale}. \\
+\texttt{write\_expr\_matrix} & \texttt{FALSE} & Write plotted matrices as text. \\
+\texttt{write\_phylo} & \texttt{FALSE} & Write heatmap dendrograms in Newick format. \\
+\addlinespace
+\multicolumn{3}{@{}l}{\textbf{Engineering}}\\
+\texttt{seed} & \texttt{NULL} & Seed for R and JAGS; \texttt{NULL} leaves the generator unseeded. \\
+\texttt{num\_threads} & \texttt{4} & Cores for parallel steps. \\
+\texttt{resume\_mode} & \texttt{TRUE} & Reuse matching checkpoints in \texttt{out\_dir}. \\
+\texttt{up\_to\_step} & \texttt{100} & Stop after this step (100: run all 30). \\
+\texttt{save\_rds} & \texttt{TRUE} & Save a checkpoint after each step. \\
+\texttt{save\_final\_rds} & \texttt{TRUE} & Save \texttt{run.final.infercnv\_obj}. \\
+\texttt{debug} & \texttt{FALSE} & Debug-level logging. \\
+\end{longtable}
+}
+\endgroup
