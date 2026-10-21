@@ -15,21 +15,22 @@
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/fig3_gallery.png}
-\caption{\textbf{inferCNV applied to tumours profiled with Smart-seq2.} Final residual expression of the malignant cells (top; fold-change scale) and i6 HMM states after Bayesian filtering (bottom) for (a) oligodendroglioma (six tumours, 4,043 cells), (b) glioblastoma (six tumours, 430 cells; reference: 1,026 GTEx bulk brain samples), (c) melanoma (1,173 malignant cells in 13 annotation groups from nine tumours) and (d) H3K27M glioma (six tumours, 2,259 cells), from the inferCNV\_examples data. Rows are cells grouped by tumour (coloured bar) and ordered by subcluster (alternating grey bar); reference cells are not shown. (e) \todo{or Supplementary Fig. S2} Synovial sarcoma: SS18--SSX fusion detection in cells classified as malignant or non-malignant by inferCNV.}
+\caption{\textbf{inferCNV applied to tumours profiled with Smart-seq2.} Final residual expression of the malignant cells (top; fold-change scale) and i6 HMM states after Bayesian filtering (bottom) for (a) oligodendroglioma (six tumours, 4,043 cells), (b) glioblastoma (six tumours, 430 cells; reference: 1,026 GTEx bulk brain samples), (c) melanoma (1,173 malignant cells in 13 annotation groups from nine tumours) and (d) H3K27M glioma (six tumours, 2,259 cells), from the inferCNV\_examples data. Rows are cells grouped by tumour (coloured bar) and ordered by subcluster (alternating grey bar); reference cells are not shown.}
 \label{fig:3}
 \end{figure}
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=\textwidth]{figures/fig4_MM199_genome.png}
-\caption{\textbf{Comparison with DNA-based copy number in multiple myeloma MM199 (10x).} Top, whole-exome copy number segments (Schmid et al.~truth). Below, inferCNV pseudobulk scores over 1,916 malignant cells: HMM states after Bayesian filtering (CNV score) and final residual expression (expression score), in 100-kb bins along the genome. \todo{Panel with ROC curves and metric summary, if wanted; RESULT PENDING: BCH869 panel against WGS clone copy number.} Settings as in Methods.}
+\includegraphics[width=\textwidth]{figures/fig4_MM199_genome.png}\\[1ex]
+\includegraphics[width=0.92\textwidth]{figures/fig4_BCH869.png}
+\caption{\textbf{Comparison with DNA-based copy number.} \textbf{a}, Multiple myeloma MM199 (10x). Top, whole-exome copy number segments (Schmid et al.~truth). Below, inferCNV pseudobulk scores over 1,916 malignant cells: HMM states after Bayesian filtering (CNV score) and final residual expression (expression score), in 100-kb bins along the genome. \textbf{b}, H3K27M glioma BCH869 (Smart-seq2). Top, inferCNV pseudobulk HMM score (i6 states after Bayesian filtering, mean over cells) for each published clone in 2-Mb bins (points), with the clone's copy number derived from whole-genome sequencing (black line) \citep{filbin2018, huang2024xclone}. The reference was the immune and oligodendrocyte cells of a second tumour, BCH1126, one group per cell type. Bottom left, cells of each published clone across inferCNV's Leiden subclusters; bottom right, AUC and F1 for gains and losses at chromosome-arm and gene level, clones pooled. Settings as in Methods.}
 \label{fig:4}
 \end{figure}
 
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/fig5_simulation.png}
-\caption{\textbf{Accuracy on simulated tumours.} Sensitivity, precision, exact-state accuracy, reference call rate and subcluster purity of the i6 HMM after Bayesian filtering for simulated 10x and Smart-seq2 data with one to four subclones (sim1--sim4), over five seeds (points) with means (bars); values in Table 1. \todo{Optional inset: i3 against i6.} \todo{Figure drawn from analyses/simulation/fig5\_simulation.png; check that it shows the master-build numbers of Table 1.}}
+\caption{\textbf{Accuracy on simulated tumours.} Cell $\times$ gene sensitivity, precision, exact-state accuracy and the non-neutral call rate in reference cells, for simulated 10x and Smart-seq2 tumours with one to four subclones (sim1--sim4), with the i6 (triangles) and i3 (circles) HMM, before (red) and after (blue) Bayesian filtering. Each point is one of five simulation seeds. Mean values for i6 after filtering, and subcluster purity, are in Table~1.}
 \label{fig:5}
 \end{figure}
 
@@ -71,3 +72,10 @@
 
 % Supplementary Table S2: Metrics against DNA-based copy number.
 % For each sample and score: number of malignant cells and bins, maximal F1, sensitivity and precision for gains and losses at the optimum, AUC and partial AUC for gains and losses, Pearson r; with the values reported by Schmid et al.~for inferCNV v1.10. (From analyses/fig4/metrics\_fig4.tsv and schmid2025\_reported\_infercnv\_v1.10.tsv.)
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_ss_fusion.png}
+\caption{\textbf{inferCNV classification of synovial sarcoma cells compared with SS18--SSX fusion detection.} Smart-seq2 cells from three synovial sarcomas \citep{jerbyarnon2021}, reprocessed; inferCNV was run per patient with half of the published immune and stromal cells as the reference (one group per published cluster), and the other half held out and analysed with the published malignant cells. (a) Per-cell CNV score (mean squared residual) against correlation with the tumour's CNV profile, for published malignant cells with and without detected SS18--SSX reads (STAR-Fusion), held-out immune and stromal cells, and reference cells. Dashed lines, 99th percentiles of the reference cells; cells beyond either line are classified malignant. (b) Classification per patient, and agreement with the CNV-based labels of the original study.}
+\label{fig:S5}
+\end{figure}
