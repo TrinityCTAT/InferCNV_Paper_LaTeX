@@ -1,21 +1,21 @@
 \begin{figure}[p]
 \centering
-\fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering Figure 1 pending}}
-\caption{\textbf{The inferCNV workflow.} \todo{RESULT PENDING} Schematic of the expression model with heatmap snapshots from the 183-cell oligodendroglioma example data set (observations above, reference cells below; columns are genes ordered by genomic position). (a) Log-transformed counts after gene filtering and depth normalisation. (b) Residual expression after subtraction of the reference and smoothing along each chromosome. (c) After per-cell centering. (d) After the second reference subtraction, shown on the fold-change scale. (e) After denoising (\texttt{denoise\ =\ TRUE}). (f) i6 HMM state predictions per subcluster after Bayesian filtering, computed from the fold-change-scale residuals in (d) after subclustering. Panels (e) and (f) are alternative outputs derived from (d).}
+\includegraphics[width=\textwidth]{figures/fig1_workflow.png}
+\caption{\textbf{The inferCNV workflow.} Top, schematic of the main steps; letters mark the steps shown below. Heatmaps, snapshots from the 184-cell oligodendroglioma example data set (142 malignant cells from four tumours above, 42 reference cells below; columns are genes ordered by genomic position, chromosome numbers below). (a) Log-transformed expression after gene filtering and depth normalisation. (b) Residual expression after subtraction of the reference mean and smoothing along each chromosome (log scale). (c) After per-cell centering. (d) After the second reference subtraction, shown on the fold-change scale. (e) After denoising (\texttt{denoise\ =\ TRUE}; same colour scale as d). (f) i6 HMM states after Bayesian filtering (\texttt{BayesMaxPNormal\ =\ 0.5}); the HMM is run per Leiden subcluster (grey bar; one subcluster per tumour in this data set) on the residuals in (d), and each cell is shown with the states of its subcluster. Panels (e) and (f) are alternative outputs derived from (d). The h-spike (top, orange) is processed alongside the data and supplies the HMM emission parameters (Fig.~2).}
 \label{fig:1}
 \end{figure}
 
 \begin{figure}[p]
 \centering
-\fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering Figure 2 pending}}
-\caption{\textbf{In-silico spike-in (h-spike) calibration of the HMM.} \todo{RESULT PENDING} (a) Mean--variance and (b) mean--dropout relationships of the reference cells with spline fits used to simulate counts. (c) Residual expression of the simulated h-spike chromosomes after the same processing as the real data, at relative copy number levels 0.01, 0.5, 1, 1.5, 2 and 3; the per-level distributions define the i6 emission parameters. (d) Comparison of i6 and i3 state calls on the same tumour.}
+\includegraphics[width=\textwidth]{figures/fig2_hspike.png}
+\caption{\textbf{In-silico spike-in (h-spike) calibration of the HMM.} Full oligodendroglioma data set (4,043 malignant and 280 reference cells), with the 184-cell example for comparison in (d). (a) Mean--variance and (b) mean--dropout relationships of the depth-normalised data, computed per annotation group (tumours and reference) and pooled, with the spline fits used to simulate the h-spike counts; gene means are sampled from the reference cells. (c) Simulated h-spike chromosomes (100 simulated normal and 100 simulated altered cells; chromosome labels give the copy number factor) after log transformation (top, shown relative to the simulated normal cells) and after the same processing as the real data (bottom). (d) Distributions of the processed h-spike residuals per copy number level (0.01, 0.5, 1, 1.5, 2, 3) in the full and example data; the fitted normal distributions (dashed; means as vertical lines) are the i6 emission parameters. (e) Single-cell residuals of the deleted arms 1p and 19q in malignant cells and of all genes in reference cells, against the i6 emission densities of the full data set. (f) Standard deviation of the mean h-spike residual against the number of cells averaged, from which the emission spread is scaled to subcluster size. (g) i6 and i3 state calls after Bayesian filtering for the same malignant cells of the full data set.}
 \label{fig:2}
 \end{figure}
 
 \begin{figure}[p]
 \centering
-\fbox{\parbox[c][4cm][c]{0.9\textwidth}{\centering Figure 3 pending}}
-\caption{\textbf{inferCNV applied to tumours profiled with Smart-seq2.} \todo{RESULT PENDING} Residual expression heatmaps (top) and i6 HMM predictions with subclusters (bottom) for (a) oligodendroglioma, (b) glioblastoma, (c) melanoma and (d) H3K27M glioma. (e) \todo{or Supplementary Fig. S2} Synovial sarcoma: SS18--SSX fusion detection in cells classified as malignant or non-malignant by inferCNV.}
+\includegraphics[width=\textwidth]{figures/fig3_gallery.png}
+\caption{\textbf{inferCNV applied to tumours profiled with Smart-seq2.} Final residual expression of the malignant cells (top; fold-change scale) and i6 HMM states after Bayesian filtering (bottom) for (a) oligodendroglioma (six tumours, 4,043 cells), (b) glioblastoma (six tumours, 430 cells; reference: 1,026 GTEx bulk brain samples), (c) melanoma (1,173 malignant cells in 13 annotation groups from nine tumours) and (d) H3K27M glioma (six tumours, 2,259 cells), from the inferCNV\_examples data. Rows are cells grouped by tumour (coloured bar) and ordered by subcluster (alternating grey bar); reference cells are not shown. (e) \todo{or Supplementary Fig. S2} Synovial sarcoma: SS18--SSX fusion detection in cells classified as malignant or non-malignant by inferCNV.}
 \label{fig:3}
 \end{figure}
 
