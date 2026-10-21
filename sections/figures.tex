@@ -1,7 +1,7 @@
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/fig1_workflow.png}
-\caption{\textbf{The inferCNV workflow.} Top, schematic of the main steps; letters mark the steps shown below. Heatmaps, snapshots from the 184-cell oligodendroglioma example data set (142 malignant cells from four tumours above, 42 reference cells below; columns are genes ordered by genomic position, chromosome numbers below). (a) Log-transformed expression after gene filtering and depth normalisation. (b) Residual expression after subtraction of the reference mean and smoothing along each chromosome (log scale). (c) After per-cell centering. (d) After the second reference subtraction, shown on the fold-change scale. (e) After denoising (\texttt{denoise\ =\ TRUE}; same colour scale as d). (f) i6 HMM states after Bayesian filtering (\texttt{BayesMaxPNormal\ =\ 0.5}); the HMM is run per Leiden subcluster (grey bar; one subcluster per tumour in this data set) on the residuals in (d), and each cell is shown with the states of its subcluster. Panels (e) and (f) are alternative outputs derived from (d). The h-spike (top, orange) is processed alongside the data and supplies the HMM emission parameters (Fig.~2).}
+\caption{\textbf{The inferCNV workflow.} Top, schematic of the main steps; letters mark the steps shown below. Heatmaps, snapshots from the 184-cell oligodendroglioma example data set (142 malignant cells from four tumours above, 42 reference cells below; columns are genes ordered by genomic position, chromosome numbers below). (a) Log-transformed expression after gene filtering and depth normalisation. (b) Residual expression after subtraction of the reference mean and smoothing along each chromosome (log scale). (c) After per-cell centering. (d) After the second reference subtraction, shown on the fold-change scale. (e) After denoising (\texttt{denoise\ =\ TRUE}; same colour scale as d). (f) i6 HMM states after Bayesian filtering (\texttt{BayesMaxPNormal\ =\ 0.5}); the HMM is run per Leiden subcluster (grey bar; one subcluster per tumour in this data set) on the residuals in (d), and each cell is shown with the states of its subcluster. Panels (e) and (f) are alternative outputs derived from (d). The h-spike (top, orange) is processed alongside the data and supplies the HMM emission parameters (Fig.~\ref{fig:2}).}
 \label{fig:1}
 \end{figure}
 
@@ -15,8 +15,15 @@
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/fig3_gallery.png}
-\caption{\textbf{inferCNV applied to tumours profiled with Smart-seq2.} Final residual expression of the malignant cells (top; fold-change scale) and i6 HMM states after Bayesian filtering (bottom) for (a) oligodendroglioma (six tumours, 4,043 cells), (b) glioblastoma (six tumours, 430 cells; reference: 1,026 GTEx bulk brain samples), (c) melanoma (1,173 malignant cells in 13 annotation groups from nine tumours) and (d) H3K27M glioma (six tumours, 2,259 cells), from the inferCNV\_examples data. Rows are cells grouped by tumour (coloured bar) and ordered by subcluster (alternating grey bar); reference cells are not shown.}
+\caption{\textbf{inferCNV applied to tumours profiled with Smart-seq2.} Final residual expression of the malignant cells (top; fold-change scale) and i6 HMM states after Bayesian filtering (bottom) for (a) oligodendroglioma (six tumours, 4,043 cells), (b) glioblastoma (six tumours, 421 cells; reference: nine oligodendrocytes identified among the profiled cells), (c) melanoma (1,173 malignant cells from nine tumours; annotation labels differing only in case, or marking two samples of one tumour, were merged after their CNA profiles were found to correlate at 0.96--0.98) and (d) H3K27M glioma (six tumours, 2,259 cells), from the inferCNV\_examples data. Rows are cells grouped by tumour (coloured bar) and ordered by subcluster (alternating grey bar); reference cells are not shown.}
 \label{fig:3}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_subclusters.png}
+\caption{\textbf{Subclustering sets the resolution of the HMM.} Simulated Smart-seq2 tumour with four subclones, A--D (100, 60, 40 and 30 cells; sim4), and 100 reference cells, analysed as a single annotation group with the i6 HMM and the Bayesian filter. (a) \texttt{random\_trees} permutation test (seed 1). Left, \texttt{ward.D2} dendrogram of the 230 tumour cells, computed on smoothed residuals; the bar shows the true subclones and the dashed line the top split. Middle, maximum tree height at each node of the recursion (diamond) against its null from 100 permutations in which each gene's values are shuffled across cells (grey). Nodes are labelled with their size and true composition. A node is split when p $\leq$ 0.1 (\texttt{tumor\_subcluster\_pval}); recursion depth is limited to 3. Right, dendrogram of subclone A (root.1.2), which is not split (p = 0.50). (b) Simulated copy number, residual expression (fold change, before denoising) and i6 states after Bayesian filtering for each analysis mode. Rows are tumour cells ordered by true subclone (left bar). The second bar shows the inferred subclusters, coloured by their majority subclone; shades mark subclusters of the same subclone. The per-chromosome Leiden partitions are not shown. Titles give the number of tumour subclusters and the cell $\times$ gene sensitivity / precision. Colour bar: i6 state as copies (0, 1, 2, 3, 4, $\geq$5). (c) Per-cell sensitivity and precision of tumour cells for each mode (Smart-seq2, five seeds). (d) Summary over five seeds (points) with means (bars) for Smart-seq2 and 10x: ARI and purity of the tumour subclusters against the true subclones; cell $\times$ gene sensitivity and precision; non-neutral call rate in reference cells; run time with 4 threads.}
+\label{fig:subclusters}
 \end{figure}
 
 \begin{figure}[p]
@@ -44,7 +51,7 @@
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/figS1_BCC06_genome.png}
-\caption{\textbf{Basal cell carcinoma BCC06 before and after treatment.} As Fig. 4, for BCC06 (1,403 malignant and 33 reference cells) and BCC06post (320 malignant and 280 reference cells). The exome segmentation of these samples is highly fragmented; see text.}
+\caption{\textbf{Basal cell carcinoma BCC06 before and after treatment.} As Fig.~\ref{fig:4}, for BCC06 (1,403 malignant and 33 reference cells) and BCC06post (320 malignant and 280 reference cells). The exome segmentation of these samples is highly fragmented; see text.}
 \label{fig:S1}
 \end{figure}
 
