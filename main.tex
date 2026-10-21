@@ -14,6 +14,9 @@
 \usepackage{graphicx}
 \usepackage{longtable,booktabs,array,calc}
 \usepackage{xcolor}
+% model diagrams of Supplementary Fig. \ref{fig:Smodels} (sections/supp_models.tex)
+\usepackage{tikz}
+\usetikzlibrary{bayesnet,positioning,fit,arrows,calc}
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage{authblk}
 \usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
@@ -69,6 +72,7 @@
 \input{sections/availability}
 \input{sections/methods}
 \input{sections/supplementary_methods}
+\input{sections/supp_models}
 \input{sections/acknowledgements}
 \input{sections/author_contributions}
 \input{sections/competing_interests}
@@ -78,5 +82,6 @@
 
 \clearpage
 \input{sections/figures}
+\SuppModelsFigure
 
 \end{document}

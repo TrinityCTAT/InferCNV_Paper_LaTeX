@@ -8,7 +8,7 @@
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/fig2_hspike.png}
-\caption{\textbf{In-silico spike-in (h-spike) calibration of the HMM.} Full oligodendroglioma data set (4,043 malignant and 280 reference cells), with the 184-cell example for comparison in (d). (a) Mean--variance and (b) mean--dropout relationships of the depth-normalised data, computed per annotation group (tumours and reference) and pooled, with the spline fits used to simulate the h-spike counts; gene means are sampled from the reference cells. (c) Simulated h-spike chromosomes (100 simulated normal and 100 simulated altered cells) after log transformation (top, shown relative to the simulated normal cells) and after the same processing as the real data (bottom), shown as one block per simulated state in copies (0, 1, 2, 3, 4, $\geq$5). In the h-spike itself the altered chromosomes are separated by neutral chromosomes, and a final neutral chromosome holds the remaining genes; one of the neutral chromosomes is shown as the 2-copy block. (d) Distributions of the processed h-spike residuals per state (0, 1, 2, 3, 4, $\geq$5 copies; simulated at relative levels 0.01--3) in the full and example data; the fitted normal distributions (dashed; means as vertical lines) are the i6 emission parameters. (e) Single-cell residuals (filled) of HMM-called events against the i6 emission densities of the run each event comes from (dashed, coloured by state as in d; clipped at the top): (i) all genes of the reference cells and (ii--iv) called regions in the oligodendroglioma data set, namely 1p in all six tumours (called 1 copy), chromosome 7 in MGH36 (3 copies) and 7p11--q11 around \textit{EGFR} in MGH36 (4 copies); (v) 1q in the H3K27M glioma BCH869 (called $\geq$5 copies; 5 copies by DNA \citep{filbin2018, huang2024xclone}), from the H3K27M glioma data set. Each event pools the cells and genes of the called regions (after Bayesian filtering) over subclusters of $\geq$10 cells. Further examples in Supplementary Fig.~\ref{fig:S6}. (f) Standard deviation of the mean h-spike residual against the number of cells averaged, from which the emission spread is scaled to subcluster size. (g) i6 and i3 state calls after Bayesian filtering for the same malignant cells of the full data set.}
+\caption{\textbf{In-silico spike-in (h-spike) calibration of the HMM.} Full oligodendroglioma data set (4,043 malignant and 280 reference cells), with the 184-cell example for comparison in (d). (a) Mean--variance and (b) mean--dropout relationships of the depth-normalised data, computed per annotation group (tumours and reference) and pooled, with the spline fits used to simulate the h-spike counts; gene means are sampled from the reference cells. (c) Simulated h-spike chromosomes (100 simulated normal and 100 simulated altered cells) after log transformation (top, shown relative to the simulated normal cells) and after the same processing as the real data (bottom), shown as one block per simulated state in copies (0, 1, 2, 3, 4, $\geq$5). In the h-spike itself the altered chromosomes are separated by neutral chromosomes, and a final neutral chromosome holds the remaining genes; one of the neutral chromosomes is shown as the 2-copy block. (d) Distributions of the processed h-spike residuals per state (0, 1, 2, 3, 4, $\geq$5 copies; simulated at relative levels 0.01--3) in the full and example data; the fitted normal distributions (dashed; means as vertical lines) are the i6 emission parameters. (e) Single-cell residuals (filled) of HMM-called events against the i6 emission densities of the run each event comes from (dashed, coloured by state as in d; clipped at the top): (i) all genes of the reference cells and (ii--iv) called regions in the oligodendroglioma data set, namely 1p in all six tumours (called 1 copy), chromosome 7 in MGH36 (3 copies) and 7p11--q11 around \textit{EGFR} in MGH36 (4 copies); (v) 1q in the H3K27M glioma BCH869 (called $\geq$5 copies; 5 copies by DNA \citep{filbin2018, huang2024xclone}), from the H3K27M glioma data set. Each event pools the cells and genes of the called regions (after Bayesian filtering) over subclusters of $\geq$10 cells. Further examples in Supplementary Fig.~\ref{fig:S6}. (f) Standard deviation of the mean of $n$ residual values resampled from the processed h-spike residuals of each state, against $n$; a line fitted on log--log scale over $n = 2$--100 scales the emission spread to the subcluster size. (g) i6 and i3 state calls after Bayesian filtering for the same malignant cells of the full data set.}
 \label{fig:2}
 \end{figure}
 
@@ -48,6 +48,11 @@
 \label{fig:6}
 \end{figure}
 
+% ---- Supplementary figures and tables: numbered S1, S2, ...
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}} % Table S1 is in supplementary_methods.tex; its counter continues here
+
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/figS1_BCC06_genome.png}
@@ -58,7 +63,7 @@
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/figS_bayes.png}
-\caption{\textbf{Bayesian filtering of HMM calls (extdata oligodendroglioma example).} \textbf{a}, The latent mixture model fitted to each predicted CNV region in each subcluster. The residuals $x_{ij}$ of the region's genes in each cell are normal with the mean $\mu_k$ and precision $\tau_k$ of the cell's state $\varepsilon_j$, which are fixed from the h-spike. Cell states are drawn from mixing proportions $\theta$ with a flat Dirichlet prior. P(normal) is the posterior mean of $\theta$ for the neutral state. \textbf{b}, Posterior distributions of $\theta$ (6 chains × 1,000 draws) for six MGH36 regions, from confident (1p, 1 copy; 7q, 4 copies) to marginal (15q, 3 copies, P(normal) = 0.48). \textbf{c}, 1 $-$ P(normal) for the 72 regions called by the i6 HMM, along the genome (one row per Leiden subcluster, one per tumour). \textbf{d}, P(normal) of each region, coloured by HMM state. Lines mark the BayesMaxPNormal values in \textbf{e--f}. Triangles: regions whose most probable state is neutral, which \texttt{reassignCNVs} resets to neutral (2 copies) even when P(normal) is below the threshold. \textbf{e}, i6 calls after filtering with BayesMaxPNormal = 0 (model off), 0.5 (default; 0.8 gives the same calls), 0.3 and 0.2. \textbf{f}, Number of non-neutral regions retained as a function of BayesMaxPNormal.}
+\caption{\textbf{Bayesian filtering of HMM calls (extdata oligodendroglioma example).} \textbf{a}, The latent mixture model fitted to each predicted CNV region in each subcluster. The residuals $x_{ij}$ of the region's genes in each cell are normal with the mean $\mu_k$ and precision $\tau_k$ of the cell's state $\varepsilon_j$, fixed at the single-cell values of the h-spike calibration (Supplementary Fig.~\ref{fig:Smodels}c). Cell states are drawn from mixing proportions $\theta$ with a flat Dirichlet prior. P(normal) is the posterior mean of $\theta$ for the neutral state. \textbf{b}, Posterior distributions of $\theta$ (6 chains × 1,000 draws, one chain per state, each started with all cells in that state) for six MGH36 regions, from confident (1p, 1 copy; 7q, 4 copies) to marginal (15q, 3 copies, P(normal) = 0.48). \textbf{c}, 1 $-$ P(normal) for the 72 regions called by the i6 HMM, along the genome (one row per Leiden subcluster, one per tumour). \textbf{d}, P(normal) of each region, coloured by HMM state. Lines mark the BayesMaxPNormal values in \textbf{e--f}. Triangles: regions whose most probable state is neutral, which \texttt{reassignCNVs} resets to neutral (2 copies) even when P(normal) is below the threshold. \textbf{e}, i6 calls after filtering with BayesMaxPNormal = 0 (model off), 0.5 (default; 0.8 gives the same calls), 0.3 and 0.2. \textbf{f}, Number of non-neutral regions retained as a function of BayesMaxPNormal.}
 \label{fig:S2}
 \end{figure}
 
@@ -77,8 +82,37 @@
 \end{figure}
 
 
-% Supplementary Table S2: Metrics against DNA-based copy number.
-% For each sample and score: number of malignant cells and bins, maximal F1, sensitivity and precision for gains and losses at the optimum, AUC and partial AUC for gains and losses, Pearson r; with the values reported by Schmid et al.~for inferCNV v1.10. (From analyses/fig4/metrics\_fig4.tsv and schmid2025\_reported\_infercnv\_v1.10.tsv.)
+% Supplementary Table S2: values from analyses/fig4/metrics_fig4.tsv (this study) and
+% analyses/fig4/schmid2025_reported_infercnv_v1.10.tsv (reported by Schmid et al. for v1.10).
+\begin{table}[p]
+\centering
+\footnotesize
+\caption{\textbf{Agreement with DNA-based copy number.} For each sample and inferCNV score (CNV, mean HMM state after Bayesian filtering; Expr, mean residual expression), the maximal three-class F1 with sensitivity and precision for gains and losses at the optimum, AUC and partial AUC for gains and losses, and the Pearson correlation with the exome truth, over 100-kb bins (Methods). ``v1.10'' rows are the values reported by Schmid et al.~\citep{schmid2025} for inferCNV v1.10 on the same samples; ``this study'' rows are the release code, scored on the bins covered by inferCNV genes (MM199: 1,916 malignant cells, 6,409 bins; BCC06: 1,403 cells, 8,826 bins; BCC06post: 320 cells, 9,509 bins).}
+\label{tab:S2}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llcccccccccc@{}}
+\toprule
+ & & & \multicolumn{2}{c}{Gain} & \multicolumn{2}{c}{Loss} & \multicolumn{2}{c}{AUC} & \multicolumn{2}{c}{Partial AUC} & \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}
+Sample & Score & Max.\ F1 & Sens. & Prec. & Sens. & Prec. & Gain & Loss & Gain & Loss & $r$ \\
+\midrule
+MM199     & CNV, this study  & 0.64 & 0.56 & 0.73 & 0.47 & 0.68 & 0.84 & 0.78 & 0.80 & 0.62 & 0.58 \\
+          & CNV, v1.10       & 0.67 & 0.57 & 0.78 & 0.51 & 0.75 & 0.84 & 0.78 & 0.70 & 0.54 & 0.61 \\
+          & Expr, this study & 0.64 & 0.69 & 0.65 & 0.45 & 0.70 & 0.83 & 0.79 & 0.79 & 0.66 & 0.51 \\
+          & Expr, v1.10      & 0.66 & 0.73 & 0.64 & 0.47 & 0.77 & 0.85 & 0.80 & 0.81 & 0.68 & 0.58 \\
+\addlinespace
+BCC06     & CNV, this study  & 0.41 & 0.42 & 0.34 & 0.22 & 0.41 & 0.60 & 0.58 & 0.47 & 0.32 & 0.20 \\
+          & CNV, v1.10       & 0.42 & 0.35 & 0.36 & 0.26 & 0.41 & 0.60 & 0.59 & 0.32 & 0.24 & 0.21 \\
+          & Expr, this study & 0.41 & 0.34 & 0.37 & 0.25 & 0.40 & 0.60 & 0.60 & 0.52 & 0.43 & 0.21 \\
+          & Expr, v1.10      & 0.42 & 0.36 & 0.36 & 0.25 & 0.43 & 0.60 & 0.60 & 0.52 & 0.44 & 0.22 \\
+\addlinespace
+BCC06post & CNV, this study  & 0.41 & 0.33 & 0.48 & 0.24 & 0.33 & 0.62 & 0.58 & 0.49 & 0.22 & 0.23 \\
+          & CNV, v1.10       & 0.38 & 0.35 & 0.47 & 0.07 & 0.46 & 0.63 & 0.57 & 0.36 & 0.07 & 0.25 \\
+          & Expr, this study & 0.42 & 0.41 & 0.43 & 0.30 & 0.32 & 0.61 & 0.57 & 0.55 & 0.35 & 0.22 \\
+          & Expr, v1.10      & 0.43 & 0.47 & 0.43 & 0.33 & 0.32 & 0.64 & 0.58 & 0.58 & 0.37 & 0.25 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[p]
 \centering
@@ -90,6 +124,6 @@
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{figures/figS_state_examples.png}
-\caption{\textbf{Observed residuals of HMM-called events against the i6 emission densities, by called state.} Events from the Smart-seq2 data sets (oligodendroglioma; glioblastoma with the GTEx or the oligodendrocyte plus GTEx reference; melanoma; H3K27M glioma), grouped by the called i6 state (rows: 0, 1, 3, 4 and $\geq$5 copies). Each event pools the cells and genes of the HMM-called regions of that state (after Bayesian filtering) over the subclusters of a tumour (subclusters of $\geq$10 cells, except in the 0-copy row). Top of each panel, density of the single-cell residuals before denoising (filled; vertical line, mean) against the six emission densities of that run's h-spike (dashed, coloured by state; clipped at the top). Bottom, per-gene mean residual of the same cells along the chromosome (event genes coloured; dashed lines, emission means). DNA, copy number of the BCH869 clones from bulk whole-genome sequencing \citep{filbin2018, huang2024xclone}. For calls of 1 to 4 copies, the residuals centre on the emission of the called state. High-level gains are compressed: the $\geq$5-copy state is open-ended, its emission mean is only 1.36 in the glioblastoma run with scaled data (5d), observed residuals can lie beyond it (5c), and focal amplicons are diluted by smoothing. Uniform gains can be split between adjacent states: 1q of BCH869, 5 copies by DNA, is called as alternating 3-, 4- and $\geq$5-copy segments (only the $\geq$5 segments are shown in 5a), and the 3-copy gain of chromosome 7 is partly called 4 copies (4c). All 0-copy calls come from subclusters of one to five cells, with residuals between the 0- and 1-copy emissions; no homozygous deletion, including of \textit{CDKN2A}, was called. The 10x data sets are not shown because only their denoised residuals were saved.}
+\caption{\textbf{Observed residuals of HMM-called events against the i6 emission densities, by called state.} Events from the Smart-seq2 data sets (oligodendroglioma; glioblastoma with the GTEx or the oligodendrocyte plus GTEx reference; melanoma; H3K27M glioma), grouped by the called i6 state (rows: 0, 1, 3, 4 and $\geq$5 copies). Each event pools the cells and genes of the HMM-called regions of that state (after Bayesian filtering) over the subclusters of a tumour (subclusters of $\geq$10 cells, except in the 0-copy row). Top of each panel, density of the single-cell residuals before denoising (filled; vertical line, mean) against the six emission densities of that run's h-spike (dashed, coloured by state; clipped at the top). Bottom, per-gene mean residual of the same cells along the chromosome (event genes coloured; dashed lines, emission means). DNA, copy number of the BCH869 clones from bulk whole-genome sequencing \citep{filbin2018, huang2024xclone}. For calls of 1 to 4 copies, the residuals centre on the emission of the called state. High-level gains are compressed: the $\geq$5-copy state is open-ended, its emission mean is only 1.36 in the glioblastoma run with scaled data (5d), observed residuals can lie beyond it (5c), and focal amplicons are diluted by smoothing. Uniform gains can be split between adjacent states: 1q of BCH869, 5 copies by DNA, is called as alternating 3-, 4- and $\geq$5-copy segments (only the $\geq$5 segments are shown in 5a), and the 3-copy gain of chromosome 7 is partly called 4 copies (4c). All 0-copy calls come from subclusters of one to five cells, with residuals between the 0- and 1-copy emissions; in subclusters of four or fewer cells the Bayesian filter cannot reset a region to neutral (Supplementary Methods), which is why these calls survive. No homozygous deletion, including of \textit{CDKN2A}, was called. The 10x data sets are not shown because only their denoised residuals were saved.}
 \label{fig:S6}
 \end{figure}

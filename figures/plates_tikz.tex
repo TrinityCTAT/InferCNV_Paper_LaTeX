@@ -1,0 +1,100 @@
+% TikZ bodies of the model diagrams (Supplementary Fig. \ref{fig:Smodels}).
+% Shared by sections/supp_models.tex (via \SuppModelsFigure) and figures/plates_standalone.tex.
+% Requires: \usepackage{tikz} \usetikzlibrary{bayesnet,positioning,fit,arrows,calc}
+%
+% Node conventions (tikz-bayesnet): latent = white circle (random), obs = grey circle
+% (observed / given data), det = diamond (deterministic function of its parents),
+% const = plain text (fixed quantity). Plates = replication.
+
+\tikzset{
+  mnode/.style={font=\footnotesize},
+  plate caption/.append style={font=\scriptsize},
+  note/.style={font=\scriptsize, text=black!70, align=left, inner sep=1pt},
+  >=stealth,
+}
+
+% ------------------------------------------------------------------
+% (a) h-spike simulator (one reference group g)
+% ------------------------------------------------------------------
+\newcommand{\PlateHspike}{%
+\begin{tikzpicture}[node distance=0.5cm and 0.7cm, mnode]
+  % given data and the quantities derived from it
+  \node[obs]                                  (Y)  {$y$};
+  \node[note, above=0.05cm of Y, align=center] {depth-normalised counts,\\all annotation groups};
+  \node[det, below=0.5cm of Y] (m)  {$m_g$};
+  \node[note, right=0.05cm of m] {gene means,\\ref.\ group $g$};
+  \edge{Y}{m};
+  % genes plate
+  \node[det, below=0.7cm of m]          (mt)  {$\tilde m_i$};
+  \node[const, right=0.7cm of mt]       (c)   {$c_{r(i)}$};
+  \node[det, below=of mt]               (mu)  {$\mu^{(t)}_i$};
+  \node[latent, below=0.6cm of mu]      (yt)  {$\tilde y_{ij}$};
+  \node[latent, below=0.6cm of yt]      (yd)  {$y^{\mathrm h}_{ij}$};
+  \edge{m}{mt}; \edge{mt}{mu}; \edge{c}{mu}; \edge{mu}{yt}; \edge{yt}{yd};
+  \plate[inner sep=0.16cm]{cells}{(yt)(yd)}{$j=1,\dots,100$}
+  \plate[inner sep=0.22cm]{type}{(cells)}{$t\in\{\mathrm{no},\mathrm{sp}\}$}
+  \plate[inner sep=0.26cm]{genes}{(mt)(c)(mu)(type)}{$i=1,\dots,G'$}
+  % splines, outside the plates, feeding the simulated counts
+  \node[det, left=1.6cm of yt] (fv) {$f_v$};
+  \node[det, left=1.6cm of yd] (f0) {$f_0$};
+  \node[note, left=0.05cm of fv, align=right] {mean--variance\\spline};
+  \node[note, left=0.05cm of f0, align=right] {mean--dropout\\spline};
+  % edges from the data run left at the height of y, then down (right of the spline nodes)
+  \draw[->] (Y.west) -| (fv.north);
+  \draw[->] (Y.west) -| ($(f0.north east)+(0.25,0.35)$) -- (f0.north east);
+  \edge{fv}{yt}; \edge{f0}{yd};
+  % downstream
+  \node[det, below=0.8cm of genes] (x) {$x^{\mathrm h}_{ij}$};
+  \node[note, right=0.1cm of x] {residuals after steps 6--16,\\mirrored on the h-spike};
+  \draw[->] (genes.south) -- (x);
+  \node[const, below=0.45cm of x] (par) {$\mu_k,\ \sigma_k,\ \sigma_k(n)$};
+  \node[note, right=0.1cm of par] {per level $k$, from the spiked cells\\of the chromosomes with $c_r=c_k$};
+  \edge{x}{par};
+\end{tikzpicture}}
+
+% ------------------------------------------------------------------
+% (b) HMM on one chromosome of one cell group c
+% ------------------------------------------------------------------
+\newcommand{\PlateHMM}{%
+\begin{tikzpicture}[node distance=0.45cm and 0.6cm, mnode]
+  \node[const]                          (delta) {$\delta$};
+  \node[latent, below=0.5cm of delta]   (s1) {$s_1$};
+  \node[latent, below=of s1]            (s2) {$s_2$};
+  \node[latent, below=of s2]            (s3) {$s_3$};
+  \node[below=0.2cm of s3]              (dots) {$\vdots$};
+  \node[latent, below=0.2cm of dots]    (sL) {$s_L$};
+  \node[obs, right=of s1] (x1) {$\bar x_{1c}$};
+  \node[obs, right=of s2] (x2) {$\bar x_{2c}$};
+  \node[obs, right=of s3] (x3) {$\bar x_{3c}$};
+  \node[obs, right=of sL] (xL) {$\bar x_{Lc}$};
+  \edge{delta}{s1}; \edge{s3}{dots}; \edge{dots}{sL};
+  \draw[->] (s1) -- node[left, font=\scriptsize] {$A$} (s2);
+  \draw[->] (s2) -- node[left, font=\scriptsize] {$A$} (s3);
+  \edge{s1}{x1}; \edge{s2}{x2}; \edge{s3}{x3}; \edge{sL}{xL};
+  \plate[inner sep=0.2cm]{chr}{(s1)(sL)(x1)(xL)}{$i=1,\dots,L$}
+  \node[const, right=0.35cm of chr.east, align=center] (par) {$\mu_k$\\$\sigma_k(n_c)$};
+  \edge{par}{x1}; \edge{par}{x2}; \edge{par}{x3}; \edge{par}{xL};
+  \plate[inner sep=0.26cm]{grp}{(chr)(delta)(par)}{group $c$; chromosomes}
+  \node[note, below=0.1cm of grp, text width=4.4cm] {$\bar x_{ic}$: mean residual of the $n_c$ cells of group $c$ at gene $i$; $s_i\in\{1,\dots,K\}$; $A_{kk}=1-(K-1)t$, $A_{kl}=t$.};
+\end{tikzpicture}}
+
+% ------------------------------------------------------------------
+% (c) Bayesian latent mixture model for one HMM region r
+% ------------------------------------------------------------------
+\newcommand{\PlateBayes}{%
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, mnode]
+  \node[const]                        (alpha) {$\alpha=(1,\dots,1)$};
+  \node[latent, below=0.45cm of alpha] (theta) {$\theta$};
+  \node[latent, below=of theta]       (eps)   {$\varepsilon_j$};
+  \node[obs, below=of eps]            (x)     {$x_{ij}$};
+  \edge{alpha}{theta}; \edge{theta}{eps}; \edge{eps}{x};
+  \plate[inner sep=0.16cm]{genes}{(x)}{$i\in G_r$}
+  \plate[inner sep=0.24cm]{cells}{(eps)(genes)}{$j\in C_r$}
+  \plate[inner sep=0.3cm]{region}{(theta)(cells)}{region $r$}
+  % fixed state parameters, shared by all regions
+  \node[const, right=1.8cm of x, yshift=0.3cm]  (mu)  {$\mu_k$};
+  \node[const, below=0.2cm of mu]               (tau) {$\tau_k$};
+  \edge{mu}{x}; \edge{tau}{x};
+  \plate[inner sep=0.14cm]{K}{(mu)(tau)}{$K$ states}
+  \node[note, below=0.1cm of region, text width=4.4cm] {$\mu_k$, $\tau_k=\sigma_k^{-2}$ fixed (i6: single-cell h-spike values; i3: $\mu\mp\Delta$, $\mu$, $\sigma$). $P_r(k)=\mathbb E[\theta_k\mid x]$, $P_{rj}(k)=\Pr(\varepsilon_j=k\mid x)$.};
+\end{tikzpicture}}

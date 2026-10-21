@@ -1,0 +1,84 @@
+% Supplementary Methods: generative models (h-spike simulator, HMMs, Bayesian mixture)
+% and Supplementary Fig. \ref{fig:Smodels}.
+%
+% Usage in main.tex:
+%   \usepackage{tikz}\usetikzlibrary{bayesnet,positioning,fit,arrows,calc}   (preamble)
+%   \input{sections/supp_models}      after \input{sections/supplementary_methods}  -> text
+%   \SuppModelsFigure                 after \input{sections/figures}               -> figure
+% The figure is emitted by the macro, not at \input time, so that it is numbered after the
+% other supplementary figures.
+%
+% Everything below was derived from the release code (branch allele_integration):
+% R/inferCNV_hidden_spike.R, R/inferCNV_meanVarSim.R, R/inferCNV_simple_sim.R (dropout fit),
+% R/inferCNV_HMM.R, R/inferCNV_i3HMM.R, R/inferCNV_BayesNet.R, inst/BUGS_Mixture_Model{,_i3}.
+
+\subsection*{Generative models: h-spike simulation, hidden Markov models and Bayesian mixture}
+\label{sec:supp_models}
+
+This section gives the models of steps 3, 19 and 20--21 in full (Supplementary Fig.~\ref{fig:Smodels}). Throughout, $x_{ij}$ is the residual expression of gene $i$ (in genomic order) in cell $j$ after step 16 (and step 18, if outlier pruning is on), on the fold-change scale with 1 as neutral; this is the matrix on which the HMM and the Bayesian model operate. A cell group $c$ (a subcluster by default, or an annotation group, or a single cell) has $n_c$ cells and mean residual $\bar x_{ic} = n_c^{-1}\sum_{j\in c} x_{ij}$. The i6 states $k=1,\dots,6$ correspond to the simulated levels $c_k\in\{0.01, 0.5, 1, 1.5, 2, 3\}$ (0 to $\geq$5 copies; $k=3$ neutral); the i3 states to loss, neutral and gain ($k=2$ neutral).
+
+\paragraph{h-spike simulation (step 3, i6 only).}
+Let $y_{ij}$ be the depth-normalised counts of step 3. For every annotation group $a$ (each observation group and each reference group) and gene $i$, the mean $m_{ia}$, variance $v_{ia}$ and zero fraction $p^0_{ia}$ over the group's cells are computed, and two smoothing splines (\texttt{smooth.spline}, smoothing parameter by generalised cross-validation) are fitted over all (gene, group) pairs: $f_v$ to $\log(v_{ia}+1)$ against $\log(m_{ia}+1)$, and $f_0$ to $p^0_{ia}$ against $\log m_{ia}$ (genes with $m_{ia}>0$). Both trends are thus estimated from all cells, observations included; only the gene means come from the reference cells. The synthetic genome has 11 chromosomes with copy factors $c_r = (1, 0.01, 1, 0.5, 1, 1.5, 1, 2, 1, 3, 1)$; the first ten have 400 genes each and the last $\max(G-4000, 400)$, where $G$ is the number of genes in the data, so that $G'=G$ genes whenever $G\geq 4400$. For each reference group $g$ (or the pooled references with \texttt{hspike\_aggregate\_normals}; all observations when there is no reference), each synthetic gene $i$ receives the mean of a data gene $\pi(i)$ drawn uniformly with replacement, $\tilde m_i = \max(m_{\pi(i) g}, 10^{-3})$, with the same $\pi$ for every group. Two sets of 100 cells are simulated, normal ($t=\mathrm{no}$) with $\mu^{(\mathrm{no})}_i=\tilde m_i$ and spiked ($t=\mathrm{sp}$) with $\mu^{(\mathrm{sp})}_i = c_{r(i)}\tilde m_i$. Counts are drawn independently for each gene and cell as a rounded, truncated normal with the variance predicted by the spline,
+\begin{equation}
+\tilde y_{ij} = \mathrm{round}\big(\max\{\,\mathcal N(\mu_i, s_i^2),\,0\}\big),\qquad
+s_i^2 = \max\{\exp f_v(\log(\mu_i+1)) - 1,\ 0\},
+\end{equation}
+and dropout is then imposed per gene so that the zero fraction matches the trend: with $\pi_i = f_0(\log \bar{\tilde y}_{i\cdot})$ the predicted zero fraction at the simulated gene mean and $z_i$ the number of zeros already present among the $n=100$ cells, each nonzero $\tilde y_{ij}$ is set to zero independently with probability $\rho_i = \max\{(n\pi_i - z_i)/(n - z_i),\,0\}$. The resulting matrix $y^{\mathrm h}$ (200 cells per reference group) is depth-normalised to the median library size of the data and then carried through steps 6--16 in parallel with the data, with the simulated normal cells serving as the h-spike's own reference groups (it is not subclustered). The emission parameters of level $k$ are the mean and standard deviation of the pooled processed residuals $x^{\mathrm h}_{ij}$ of the spiked cells on the chromosomes with $c_r=c_k$ (the six neutral chromosomes are pooled for $k=3$):
+\begin{equation}
+\mu_k = \mathrm{mean}(P_k),\quad \sigma_k = \mathrm{sd}(P_k),\qquad P_k=\{x^{\mathrm h}_{ij}:\ c_{r(i)}=c_k,\ j\ \text{spiked}\}.
+\end{equation}
+To obtain the spread of a mean over $n$ cells, for $n=1,\dots,100$ the standard deviation $\hat\sigma_k(n)$ of the mean of $n$ values drawn with replacement from $P_k$ is estimated over 100 rounds (the $n=1$ point is undefined and dropped), and a line is fitted by least squares,
+\begin{equation}
+\log\hat\sigma_k(n) = a_k + b_k\log n,\qquad \sigma_k(n_c) = \exp(a_k + b_k\log n_c),
+\end{equation}
+with $b_k\approx-\tfrac12$ (Fig.~\ref{fig:2}f). The means $\mu_k$ are not scaled. In \texttt{analysis\_mode = "cells"} the single-cell $\sigma_k$ is used directly.
+
+\paragraph{Hidden Markov model (step 19).}
+For each chromosome with genes $i=1,\dots,L$ and each cell group $c$, the hidden states $s_i\in\{1,\dots,K\}$ ($K=6$ or 3) form a Markov chain with initial distribution $\delta$ and transition matrix $A$,
+\begin{equation}
+\Pr(s_1=k)=\delta_k,\qquad \Pr(s_{i+1}=l\mid s_i=k)=A_{kl},\qquad A_{kk}=1-(K-1)t,\quad A_{kl}=t\ (k\neq l),
+\end{equation}
+with $t=$ \texttt{HMM\_transition\_prob} $=10^{-6}$ and $\delta$ equal to $1-(K-1)t$ for the neutral state and $t$ otherwise. The emission model is Gaussian, $\bar x_{ic}\mid s_i=k \sim \mathcal N(\mu_k, \sigma_k(n_c)^2)$. For i6, $\mu_k$ and $\sigma_k(n_c)$ are the h-spike values above. For i3, with $R$ the set of residuals $x_{ij}$ of all reference cells (all cells when there is no reference), $\mu=\mathrm{mean}(R)$ and $\sigma=\mathrm{sd}(R)$ define the neutral state, the loss and gain means are $\mu\mp\Delta$ with
+\begin{equation}
+\Delta = \sigma\,\Phi^{-1}(1-p),\qquad p=\texttt{HMM\_i3\_pval}=0.05\ \ (\Delta = 1.645\,\sigma),
+\end{equation}
+and all three states share $\sigma$, which is not scaled with $n_c$. With \texttt{HMM\_i3\_use\_KS}, $\Delta$ is instead taken from a straight-line fit of the shift $d\in\{0,\sigma/10,\dots,\sigma\}$ on the mean two-sample Kolmogorov--Smirnov $p$-value (100 replicates) between $n_R$ draws from $\mathcal N(0,\sigma^2)$ and $n_R$ draws from $\mathcal N(d,\sigma^2)$, evaluated at $p$, where $n_R$ is the number of reference cells (after HoneyBADGER \citep{fan2018}).
+
+The chain is decoded by the Viterbi algorithm. The implementation (\texttt{Viterbi.dthmm.adj}, adapted from the HiddenMarkov package \citep{hiddenmarkov}) departs from the textbook recursion in the emission term: the state standard deviations are replaced by their median, $\tilde\sigma_c = \mathrm{median}_k\,\sigma_k(n_c)$ (for i3, $\tilde\sigma_c=\sigma$), and the Gaussian density is replaced by a normalised score based on the one-sided tail probability of each state,
+\begin{equation}
+q_{ik} = 1-\Phi\!\left(\frac{|\bar x_{ic}-\mu_k|}{\tilde\sigma_c}\right),\qquad
+b_{ik} = \frac{(-\log q_{ik})^{-1}}{\sum_{l=1}^{K}(-\log q_{il})^{-1}},
+\label{eq:emission}
+\end{equation}
+so that $b_{ik}$ is the relative, not absolute, support for state $k$ at gene $i$ and decays more slowly with distance from $\mu_k$ than a Gaussian. The recursion is $\nu_{1k} = \log\delta_k + \log b_{1k}$, $\nu_{ik} = \max_l\{\nu_{i-1,l} + \log A_{lk}\} + \log b_{ik}$, with the usual back-trace $\hat s_L=\arg\max_k \nu_{Lk}$ and $\hat s_i = \arg\max_k\{\nu_{ik}+\log A_{k\hat s_{i+1}}\}$. A chromosome with a single gene is assigned state 3. All cells of the group receive the group's state sequence; a region is a maximal run of consecutive genes of a chromosome with the same state in a group, and the states are mapped to the representative values 0, 0.5, 1, 1.5, 2, 3 (i6) or 0.5, 1, 1.5 (i3) for output.
+
+\paragraph{Bayesian latent mixture model (steps 20--21).}
+Each HMM region $r$ with genes $G_r$, called in cell group $c$, is modelled with the cells $C_r$ of that group ($|C_r|=n_c$) as a finite mixture of the $K$ state distributions with known components. The model, written for JAGS \citep{plummer2003jags} in \texttt{inst/BUGS\_Mixture\_Model} (i6) and \texttt{inst/BUGS\_Mixture\_Model\_i3} (i3) and run through rjags \citep{rjags}, is
+\begin{equation}
+\theta \sim \mathrm{Dirichlet}(1,\dots,1),\qquad
+\varepsilon_j \mid \theta \sim \mathrm{Categorical}(\theta),\qquad
+x_{ij}\mid \varepsilon_j=k \sim \mathcal N(\mu_k, \tau_k^{-1}),\quad i\in G_r,\ j\in C_r,
+\end{equation}
+with the state means $\mu_k$ and precisions $\tau_k=\sigma_k^{-2}$ fixed: for i6 the single-cell h-spike values ($\sigma_k$, not $\sigma_k(n_c)$, because the model describes individual cells), and for i3 the means $\mu-\Delta,\mu,\mu+\Delta$ with common precision $\sigma^{-2}$. Genes within a cell are conditionally independent given the cell's state, and residuals are assumed independent across cells. Given the states, the mixing proportions have the conjugate posterior $\theta\mid\varepsilon \sim \mathrm{Dirichlet}(1+n_1,\dots,1+n_K)$ with $n_k=\#\{j:\varepsilon_j=k\}$, and given $\theta$ each cell's state has $\Pr(\varepsilon_j=k\mid\theta,x)\propto\theta_k\prod_{i\in G_r}\mathcal N(x_{ij};\mu_k,\tau_k^{-1})$; JAGS alternates these updates by Gibbs sampling. $K$ chains are run, chain $k$ initialised with every cell in state $k$, each with 500 adaptation iterations, 200 burn-in iterations and 1,000 retained iterations (chains seeded from R's generator when \texttt{seed} is set), and the $K\times 1{,}000$ draws are pooled. The region-level posterior probability of state $k$ is the posterior mean of the mixing proportion, $P_r(k)=\mathbb E[\theta_k\mid x]$, and the cell-level probability $P_{rj}(k)=\Pr(\varepsilon_j=k\mid x)$ is the fraction of draws in which cell $j$ is in state $k$. Because the components are fixed, $P_r(k)\approx(\bar n_k+1)/(n_c+K)$, where $\bar n_k$ is the posterior mean number of cells in state $k$: it is essentially the fraction of the group's cells whose residuals over $G_r$ are best explained by state $k$, shrunk towards $1/K$ by the prior. (One consequence is that with i6 a region in a group of four or fewer cells cannot reach $P_r(\text{neutral})>0.5$ even if every cell looks neutral.) Filtering (step 21) resets a region to neutral when $P_r(\text{neutral})>$ \texttt{BayesMaxPNormal}; otherwise, with \texttt{reassignCNVs}, its state becomes $\arg\max_k P_r(k)$, which can itself be the neutral state. The cell-level probabilities are written out but are not used for filtering by default.
+
+% ------------------------------------------------------------------
+% The figure. Emitted where \SuppModelsFigure is called (after sections/figures.tex).
+\newcommand{\SuppModelsFigure}{%
+\begin{figure}[p]
+\centering
+\input{figures/plates_tikz}
+\begin{minipage}[t]{0.39\textwidth}
+  \textbf{a}\quad h-spike simulator\\[2pt]
+  \PlateHspike
+\end{minipage}\hfill
+\begin{minipage}[t]{0.29\textwidth}
+  \textbf{b}\quad hidden Markov model\\[2pt]
+  \PlateHMM
+\end{minipage}\hfill
+\begin{minipage}[t]{0.29\textwidth}
+  \textbf{c}\quad Bayesian latent mixture\\[2pt]
+  \PlateBayes
+\end{minipage}
+\caption{\textbf{Graphical models of the i6 calibration, the HMM and the Bayesian filter.} Circles are random variables (grey: given data), diamonds deterministic quantities, plain symbols fixed parameters, and boxes replication (plates). \textbf{a}, h-spike simulator (step 3; one reference group $g$). From the depth-normalised counts $y$ of all annotation groups, splines $f_v$ (log variance on log mean) and $f_0$ (zero fraction on log mean) are fitted; the gene means $m_g$ of the reference group are sampled with replacement to give $\tilde m_i$ for the $G'$ genes of a synthetic genome of 11 chromosomes with copy factors $c_r\in\{0.01,0.5,1,1.5,2,3\}$. For 100 normal cells ($\mu_i=\tilde m_i$) and 100 spiked cells ($\mu_i=c_{r(i)}\tilde m_i$), counts $\tilde y_{ij}$ are drawn with the variance given by $f_v$, and dropout from $f_0$ gives $y^{\mathrm h}_{ij}$. The h-spike is then processed exactly as the data (steps 6--16) and the residuals $x^{\mathrm h}_{ij}$ of the spiked cells give, per level $k$, the emission mean $\mu_k$, the single-cell standard deviation $\sigma_k$ and its scaling with group size $\sigma_k(n)$. \textbf{b}, HMM for one chromosome of one cell group $c$ (step 19): hidden states $s_i$ with initial distribution $\delta$ and transition matrix $A$ (off-diagonal $t=10^{-6}$), emitting the group's mean residual $\bar x_{ic}$ from $\mathcal N(\mu_k,\sigma_k(n_c)^2)$; decoded by Viterbi with the emission score of Eq.~\ref{eq:emission}. \textbf{c}, Bayesian latent mixture model for one HMM region $r$ (steps 20--21): the cells $C_r$ of the group have states $\varepsilon_j$ drawn from mixing proportions $\theta$ with a flat Dirichlet prior, and the residuals $x_{ij}$ of the region's genes $G_r$ are normal with the fixed mean and precision of the cell's state. The posterior mean of $\theta$ gives the region's state probabilities, and the posterior of $\varepsilon_j$ the cell-level probabilities.}
+\label{fig:Smodels}
+\end{figure}}

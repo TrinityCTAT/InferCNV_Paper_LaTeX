@@ -1,0 +1,26 @@
+% Standalone build of the model diagrams of Supplementary Fig. \ref{fig:Smodels}.
+% Compile from latex/figures/:
+%   latexmk -pdf -interaction=nonstopmode plates_standalone.tex
+%   pdftoppm -png -r 200 plates_standalone.pdf plates_standalone
+\documentclass[border=6pt,varwidth=17.5cm]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usetikzlibrary{bayesnet,positioning,fit,arrows,calc}
+\providecommand{\ref}[1]{#1}
+\begin{document}
+\input{plates_tikz}
+\begin{minipage}[t]{0.39\linewidth}
+  \textbf{a}\quad h-spike simulator\\[2pt]
+  \PlateHspike
+\end{minipage}\hfill
+\begin{minipage}[t]{0.29\linewidth}
+  \textbf{b}\quad hidden Markov model\\[2pt]
+  \PlateHMM
+\end{minipage}\hfill
+\begin{minipage}[t]{0.29\linewidth}
+  \textbf{c}\quad Bayesian latent mixture\\[2pt]
+  \PlateBayes
+\end{minipage}
+\end{document}
