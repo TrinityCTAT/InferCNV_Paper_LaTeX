@@ -1,0 +1,82 @@
+\documentclass[11pt]{article}
+
+% ---- layout and fonts
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}
+\onehalfspacing
+
+% ---- content
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{authblk}
+\usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
+
+% allow common Unicode symbols in the text with pdfLaTeX (Overleaf default)
+\usepackage{newunicodechar}
+\newunicodechar{±}{\ensuremath{\pm}}
+\newunicodechar{×}{\ensuremath{\times}}
+\newunicodechar{≥}{\ensuremath{\geq}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{≈}{\ensuremath{\approx}}
+\newunicodechar{−}{\ensuremath{-}}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newunicodechar{λ}{\ensuremath{\lambda}}
+\newunicodechar{μ}{\ensuremath{\mu}}
+\newunicodechar{σ}{\ensuremath{\sigma}}
+\newunicodechar{δ}{\ensuremath{\delta}}
+
+% pandoc-generated lists and tables use these
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\newlength{\cslhangindent}
+
+% editing notes: \todo{...} shows in red; remove before submission
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+
+\title{inferCNV: inferring copy number alterations from single-cell transcriptomes}
+
+% [confirm author list, order and affiliations]
+\author[1]{Christophe Georgescu}
+\author[2]{Itay Tirosh}
+\author[1]{Timothy Tickle}
+\author[1]{Maxwell Brown}
+\author[1]{Yu Zhong}
+\author[3]{Simon Kasif}
+\author[1]{Aviv Regev}
+\author[1]{Brian J. Haas}
+\affil[1]{\todo{affiliation}}
+\affil[2]{\todo{affiliation}}
+\affil[3]{\todo{affiliation}}
+\date{Draft, \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/implementation}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/availability}
+\input{sections/methods}
+\input{sections/supplementary_methods}
+\input{sections/acknowledgements}
+\input{sections/author_contributions}
+\input{sections/competing_interests}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\clearpage
+\input{sections/figures}
+
+\end{document}

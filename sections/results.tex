@@ -1,0 +1,81 @@
+\section{Results}\label{sec:results}
+
+\subsection{Workflow on an example data set (Fig. 1)}
+
+Figure 1 follows the 183-cell oligodendroglioma example distributed with the package (Smart-seq2; 42 non-malignant and 141 malignant cells from four tumours \citep{tirosh2016oligo}) through the main steps of the pipeline. \todo{RESULT PENDING: Fig. 1, workflow schematic with heatmap snapshots after log transformation, smoothing, centering, reference subtraction, denoising, and HMM prediction after Bayesian filtering, rerun with the release.} The log-transformed expression shows no visible genomic structure. After smoothing along chromosomes, centering and subtraction of the reference, the expected loss of 1p and 19q in the malignant cells appears as contiguous blocks, while the reference cells remain close to neutral. Denoising clarifies the heatmap, and the HMM converts the residual signal into discrete, filtered state calls per subcluster.
+
+\subsection{In-silico spike-in calibration (Fig. 2)}
+
+Figure 2 illustrates the h-spike calibration. \todo{RESULT PENDING: Fig. 2, (a) mean--variance and mean--dropout fits from the reference cells; (b) residual expression of the simulated h-spike chromosomes after processing, by copy number level; (c) the resulting six-state emission distributions compared with the residual signal of real chromosomes with known gains and losses; (d) i6 compared with i3 state calls on the same tumour; for the example data and the full oligodendroglioma data.} After processing, the residual levels of the simulated chromosomes are compressed relative to their nominal copy number factors and their spread depends on the depth and dropout of the data set, which is why parameters derived from the data themselves are used rather than fixed state means.
+
+\subsection{Application to tumours (Fig. 3)}
+
+inferCNV recovers the hallmark CNAs of tumours profiled with Smart-seq2 in the original studies of the method \todo{RESULT PENDING: Fig. 3, residual heatmaps and i6 HMM calls with subclusters for oligodendroglioma (1p/19q co-deletion) \citep{tirosh2016oligo}, glioblastoma (+7/−10) \citep{patel2014}, melanoma \citep{tirosh2016melanoma} and H3K27M glioma \citep{filbin2018}, rerun with the release on the inferCNV\_examples data}. In some oligodendroglioma and H3K27M glioma samples, subclusters within a tumour show distinct CNA patterns, as noted previously \citep{haas2021thesis}.
+
+As an orthogonal check on the classification of cells as malignant, we compared inferCNV calls with detection of the SS18--SSX fusion transcript, the defining driver of synovial sarcoma, in single cells \citep{jerbyarnon2021}. \todo{RESULT PENDING: synovial sarcoma panel (Fig. 3 or Supplementary Fig. S2), fraction of cells with SS18--SSX fusion reads among cells classified as malignant or non-malignant by inferCNV; fusion detection method to be cited \citep{haas2019starfusion, dobin2013star}.} Fusion reads are not expected in every malignant cell, so the informative quantity is the inferCNV classification of cells in which the fusion is detected.
+
+\subsection{Accuracy against DNA-based copy number (Fig. 4)}
+
+We used samples and whole-exome copy number truth from the benchmark of \citet{schmid2025} and re-implemented its evaluation (Methods); the comparison with other callers is in that study. Two scores were averaged over malignant cells per genomic bin: the HMM states after Bayesian filtering (CNV score) and the final denoised residual expression (expression score).
+
+For the 10x multiple myeloma sample MM199 (1,916 malignant cells, 245 reference B and NK/T cells), inferCNV's pseudobulk profile followed the exome copy number profile (Fig. 4). The CNV score had an AUC of 0.837 for gains and 0.779 for losses, a Pearson correlation with the truth of 0.581, and a maximal three-class F1 of 0.639 (gain sensitivity 0.562 and precision 0.730; loss sensitivity 0.467 and precision 0.683). The expression score gave similar AUCs (0.831 for gains, 0.786 for losses), the same maximal F1 (0.639) and a lower correlation (0.507). For context, Schmid et al.~reported for inferCNV v1.10 on this sample maximal F1 of 0.673 (CNV) and 0.664 (expression), gain AUCs of 0.837 and 0.849, loss AUCs of 0.782 and 0.801, and correlations of 0.612 and 0.585 \citep{schmid2025}. The values are close despite differences in input: Schmid et al.~reprocessed the reads and used 362 reference cells, whereas we used the deposited count matrix with a re-derived annotation and a newer gene annotation. The partial AUCs of the CNV score were higher than reported for v1.10 (0.796 against 0.700 for gains, 0.620 against 0.544 for losses), but the differences in input preclude attributing this to changes in the code.
+
+The two basal cell carcinoma samples of the benchmark (BCC06 before and after treatment) are shown in Supplementary Fig. S1. Against their exome truth, both inferCNV scores were close to chance (AUC 0.57--0.62, maximal F1 0.41--0.42; Supplementary Table S2), as were the values reported for v1.10 (maximal F1 0.38--0.43) and for all callers in \citet{schmid2025}. The exome segmentation of these samples is highly fragmented (4,522 segments for BCC06, about half of them losses with small copy ratios) and labels about half of the genome as altered, whereas inferCNV shows a few clear arm-level events; BCC06 also has only 33 reference cells. These samples therefore measure the noise of the truth as much as the accuracy of the caller.
+
+\todo{RESULT PENDING: BCH869 panel, H3K27M glioma BCH869 (Smart-seq2, 489 cells \citep{filbin2018}) against whole-genome-sequencing-derived clone copy number \citep{filbin2018, huang2024xclone}; awaiting reprocessing. Note that this sample has only three non-malignant cells, so the reference must be supplied from another sample or data set.}
+
+\subsection{Accuracy on simulated data (Fig. 5)}
+
+Real data rarely provide cell-level truth, so we evaluated cell × gene accuracy on simulated tumours (Methods). Counts were simulated from normal cells of a Smart-seq2 data set (synovial sarcoma non-malignant cells \citep{jerbyarnon2021}) and a 10x data set, with CNAs covering whole chromosomes (0.5×, 1.5× and 2×) and parts of chromosomes (a 2× partial gain on chr2 and a near-complete loss on chr8), in one tumour population (sim1) or two to four subclones with shared and private events (sim2--sim4). inferCNV was run with the default Leiden subclustering, the i6 HMM and Bayesian filtering, five times with different random seeds.
+
+Across scenarios, inferCNV detected 95--100\% of altered gene positions in tumour cells with the correct direction, and 92--97\% of its non-neutral calls were correct (Table 1, Fig. 5). Among altered genes, the exact i6 state was correct for 89--97\%. In the reference cells, 0.5--0.6\% (10x) and 1.1--1.5\% (Smart-seq2) of gene calls were non-neutral. Subclones were mostly separated by the Leiden subclustering, with subcluster purity falling from 1.00 for a single population to 0.91 (10x) and 0.84 (Smart-seq2) for four subclones of 30--100 cells that share most of their CNAs (sim4). The Bayesian filter mainly removed false calls: for Smart-seq2, it reduced the non-neutral call rate in reference cells from 1.5--2.0\% to 1.1--1.5\% and increased precision by about 0.01, at a cost of at most 0.01 in sensitivity; for 10x the changes were smaller.
+
+\textbf{Table 1.} Simulation accuracy of the i6 HMM after Bayesian filtering (mean ± s.d. over 5 seeds; release build of the expression model, master v1.23.0 code). Sensitivity: altered gene positions in tumour cells called in the correct direction. Precision: non-neutral calls in the correct direction. Exact state: correct i6 state among altered positions. Reference calls: non-neutral call rate in reference cells. Purity: fraction of tumour cells in subclusters dominated by their own simulated group.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1429}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Platform
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Scenario (tumour cells)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Sensitivity
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Precision
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Exact state
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Reference calls
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Purity
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+10x & sim1 (100) & 0.997 ± 0.003 & 0.925 ± 0.015 & 0.885 ± 0.032 & 0.5\% & 1.000 \\
+10x & sim2 (60, 40) & 0.993 ± 0.008 & 0.929 ± 0.013 & 0.944 ± 0.023 & 0.6\% & 0.976 \\
+10x & sim3 (100, 60, 40) & 0.998 ± 0.002 & 0.963 ± 0.002 & 0.970 ± 0.006 & 0.6\% & 0.994 \\
+10x & sim4 (100, 60, 40, 30) & 0.972 ± 0.021 & 0.962 ± 0.002 & 0.934 ± 0.010 & 0.6\% & 0.910 \\
+Smart-seq2 & sim1 (100) & 0.967 ± 0.022 & 0.934 ± 0.014 & 0.907 ± 0.019 & 1.3\% & 1.000 \\
+Smart-seq2 & sim2 (60, 40) & 0.962 ± 0.018 & 0.937 ± 0.010 & 0.924 ± 0.030 & 1.1\% & 0.904 \\
+Smart-seq2 & sim3 (100, 60, 40) & 0.984 ± 0.005 & 0.968 ± 0.006 & 0.961 ± 0.010 & 1.1\% & 0.950 \\
+Smart-seq2 & sim4 (100, 60, 40, 30) & 0.948 ± 0.009 & 0.959 ± 0.007 & 0.918 ± 0.015 & 1.5\% & 0.842 \\
+\end{longtable}
+
+With the three-state HMM, results on 10x data were similar to i6 in sensitivity (0.97--1.00) with slightly lower precision (0.90--0.95). On Smart-seq2 data i3 was more conservative, with lower sensitivity (0.89--0.96), higher precision (0.95--0.98) and fewer calls in reference cells (0.6--0.9\%). The i3 runs took about half the time, mainly because the Bayesian model uses three chains rather than six. The i3 model does not distinguish levels of gain or loss.
+
+Simulated data are easier than real data. The simulator draws counts from the same mean--variance and dropout model that underlies the h-spike calibration, the simulated CNAs are large, and the simulations contain no batch effects, no cell-type-specific expression programmes among the malignant cells and no doublets. On real 10x data, expression-based calls are noticeably noisier than in these simulations. The simulations therefore show that the implementation behaves as intended, rather than estimating its accuracy in practice.
+
+\subsection{Specificity and scale (Fig. 6)}
+
+To estimate the false-call rate on data without CNAs, we ran inferCNV on peripheral blood mononuclear cells from healthy donors \citep{tenx2016pbmc3k, xclonedata}, using one set of cell types as the reference and the others as observations. \todo{RESULT PENDING: Fig. 6a, fraction of non-neutral calls in the observation cells before and after Bayesian filtering, by cell type.}
+
+Run time was the main practical criticism of inferCNV in \citet{schmid2025}. With 4 threads, the three tumour samples of Fig. 4 ran in 12 min (BCC06post; 600 cells), 28 min (BCC06; 1,436 cells) and 50 min (MM199; 2,161 cells and 5,740 genes after filtering), with peak memory of 3.4, 9.6 and 14.8 GB. Most of the time was spent in the Bayesian model and its plots. On a 10x triple-negative breast cancer data set (TNBC1, 1,097 cells) run with 4 threads on a heavily loaded 8-core host, an expression-only run took 1.47 h, of which filtering, normalisation and smoothing took 10 min, Leiden subclustering 17 s, the HMM 6.5 min, the Bayesian model 57 min and the subsequent filtering 13 min; these times are upper bounds. In the simulations (200--330 cells, including 100 reference cells), runs took 3--8 min with the i6 HMM. \todo{RESULT PENDING: Fig. 6b, run time and peak memory against number of cells on down-sampled data sets on an unloaded host, with and without the Bayesian model, and with i6 and i3.} Users with large data sets can skip the Bayesian model (\texttt{BayesMaxPNormal\ =\ 0}), use the i3 HMM, increase \texttt{num\_threads}, or subsample groups with \texttt{max\_cells\_per\_group}.
