@@ -48,6 +48,20 @@
 \label{fig:6}
 \end{figure}
 
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/fig7_longread.png}
+\caption{\textbf{Long-read single-cell data.} (a) Fraction of genes $\times$ cells in a non-neutral i6 state in PBMC without CNAs, for Kinnex long reads (9,936 cells) and the 10x short-read data of Fig.~\ref{fig:6}a (2,625 cells), with a random half of every cell type as the reference, given as one group per cell type or pooled; light bars, HMM; dark bars, after Bayesian filtering. (b) Eight lung cancer cell lines (LongBench, Kinnex, 3,850 cells) analysed with the Kinnex PBMCs as the reference: mean HMM state per chromosome arm, relative to neutral, against CCLE copy number (mean log$_2$ ratio); one point per line and arm. (c) Pearson correlation with CCLE per line (coloured) and pooled (diamonds) for the same cells sequenced with Kinnex, ONT and Illumina and analysed without a reference (CCLE values centred on the mean of the lines). (d) ccRCC patient-derived organoids (MAS-ISO-seq) analysed with a normal kidney organoid as the reference: percentage of cells with 3p loss and with 5q gain by organoid and by the original authors' expression-based label (cell numbers in parentheses).}
+\label{fig:7}
+\end{figure}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/fig8_visiumhd.png}
+\caption{\textbf{Spatial long-read data (Kinnex Visium HD).} Sections of a colon adenocarcinoma, a breast infiltrating ductal carcinoma and a tonsil, summed into 32-\textmu m spots with at least 1,000 counts. (a) Tissue compartments from marker scores of spot clusters; reference spots are shown in full colour. In the tumours, fibroblast spots were the reference for epithelial spots; in the tonsil, which serves as a control without CNAs, half of each cluster was the reference for the other half. (b) CNA score (mean squared residual expression), on a common scale. (c, d) Mean HMM state, relative to neutral, of each spot's inferCNV subcluster over selected chromosome arms in the colon (c) and breast (d) tumours; reference spots in grey. (e) Fraction of genes $\times$ spots in a non-neutral i6 state (HMM without Bayesian filter) in observation and reference spots, including the breast tumour analysed with a single fibroblast cluster as the reference.}
+\label{fig:8}
+\end{figure}
+
 % ---- Supplementary figures and tables: numbered S1, S2, ...
 \setcounter{figure}{0}
 \renewcommand{\thefigure}{S\arabic{figure}}
