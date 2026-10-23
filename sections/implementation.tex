@@ -1,14 +1,16 @@
-\section{Implementation}\label{sec:implementation}
+\subsection{The inferCNV algorithm and its implementation}\label{sec:implementation}
 
 A run has two parts: creation of an \texttt{infercnv} object from the inputs, and a call to \texttt{run()}, which applies a fixed sequence of numbered steps (Fig.~\ref{fig:1}). We describe the expression model with the code defaults of the release; Supplementary Methods gives every step, and Supplementary Table~\ref{tab:S1} the parameters.
 
-\subsection{Inputs}
+\placefloat{fig:1}
+
+\subsubsection{Inputs}
 
 inferCNV takes a matrix of raw read or UMI counts (genes × cells; dense, sparse \texttt{dgCMatrix}, or a text file); a table assigning each cell to a group, such as a cell type, patient or cluster; and a gene order file with each gene's chromosome, start and end, which \texttt{gtf\_to\_position\_file.py} builds from a GTF annotation. The user names one or more groups of cells expected to be normal (for example immune or stromal cells) as the reference; all other groups are observations. Without a reference, the mean over all observations is the baseline, which is appropriate only when many observations are normal.
 
 At object creation, cells with fewer than 100 counts are removed (\texttt{min\_max\_counts\_per\_cell}), genes on chrX, chrY and chrM are excluded (\texttt{chr\_exclude}), genes are ordered by position, and groups can be randomly subsampled (\texttt{max\_cells\_per\_group}). Counts are kept sparse until smoothing.
 
-\subsection{Expression signal}
+\subsubsection{Expression signal}
 
 Counts are converted into a residual expression signal in which large-scale CNAs appear as contiguous blocks of increased or decreased values (Fig.~\ref{fig:1}).
 
@@ -35,7 +37,7 @@ Optional steps, off by default, Z-scale genes, remove genes at chromosome ends, 
 
 Bounding the reference subtraction by the range of the reference group means prevents cell-type-specific expression from entering the residuals. In the example, a quarter of the genes differ by more than twofold between microglia and oligodendrocytes. Subtracting a single pooled mean instead raised the residual noise 1.4-fold in tumour cells and 1.7-fold in reference cells (Supplementary Fig.~\ref{fig:S3}). Smoothing raises the signal-to-noise of a CNA roughly as the square root of the number of genes averaged: the default 101-gene triangular window (about 76 effective genes) reduced the residual noise 2.2-fold relative to a 21-gene window, without visibly blurring arm-level events.
 
-\subsection{Subclustering}
+\subsubsection{Subclustering}
 
 Per-cell profiles are noisy, so by default states are predicted for subclusters of cells (\texttt{analysis\_mode\ =\ "subclusters"}). Cells are partitioned within each observation group (\texttt{cluster\_by\_groups\ =\ TRUE}) or across pooled observations; each reference group is subclustered on its own. Genes with extreme residuals in the reference (mean \textbar Z\textbar{} ≥ 0.8, \texttt{z\_score\_filter}) are left out of the clustering.
 
@@ -43,7 +45,7 @@ The default partition method is Leiden community detection \citep{traag2019leide
 
 A slower alternative (\texttt{random\_trees}) tests how many subclusters the data support. Following significance testing of hierarchical clustering \citep{kimes2017shc}, the maximum height of the cell dendrogram is compared with a null from 100 permutations in which each gene's values are shuffled across cells before re-smoothing and re-clustering. If significant (\texttt{tumor\_subcluster\_pval\ =\ 0.1}), the top split is accepted and each branch is tested recursively, to depth 3 and a minimum of 10 cells \citep{haas2021thesis}. Tree cuts based on normal or gamma fits to the tree heights are also available.
 
-\subsection{Hidden Markov model and in-silico spike-in calibration}
+\subsubsection{Hidden Markov model and in-silico spike-in calibration}
 
 To call discrete CNAs, inferCNV segments each chromosome with a hidden Markov model (HMM) run on the mean residual expression of each subcluster (or annotation group, or cell). The design follows the expression HMM of HoneyBADGER \citep{fan2018}, with gain, neutral and loss states and fixed low transition probabilities, and extends it in two ways \citep{haas2021thesis}.
 
@@ -51,11 +53,13 @@ First, the default HMM (\texttt{HMM\_type\ =\ "i6"}) has six states. Internally 
 
 Second, the expected residual signal of each state is learned by simulation. There is no simple statistical way to place six state means from the observed data, but the behaviour of normal cells in the same experiment can be modelled. inferCNV fits smoothing splines to two relationships in the depth-normalised counts: log variance against log mean, and the fraction of zero counts against log mean. Each spline is fitted over all annotation groups, with one point per gene and group. It then constructs a synthetic ``hidden spike-in'' (h-spike) genome: ten artificial chromosomes of 400 genes alternate between neutral copy number and the five altered levels (with 0.01 rather than 0 for complete loss, to allow for ambient or contaminating reads), and one further neutral chromosome takes the remaining genes, so that the h-spike has as many genes as the input matrix (at least 4,400). Gene means are sampled with replacement from the means of the reference cells and multiplied by the copy number factor of their chromosome. For each reference group, counts are then simulated for 100 normal and 100 altered cells. Each count is a rounded normal draw, truncated at zero, with the variance given by the mean--variance spline. Zeros are then added gene by gene until the fraction of zeros matches the dropout spline (Supplementary Methods). The h-spike counts are then carried through exactly the same filtering, normalisation, reference subtraction, smoothing and centering as the real data. The processed residuals of the altered cells on the chromosomes at each level give the emission mean and standard deviation of the corresponding state; the neutral chromosomes are pooled for the neutral state (Fig.~\ref{fig:2}; Supplementary Fig.~\ref{fig:Smodels}). The calibration thus accounts for the compression of the signal by processing and for the depth and dropout of the data set. Two caveats apply to the copy-number labels. First, they are relative to each tumour cell's dominant copy-number level. Because the h-spike is built from the reference cells, gains and losses of chromosomes or arms relative to the normal genome are detected as such. However, depth normalisation scales every cell to the same library size, so a uniform change in ploidy, such as whole-genome doubling, is invisible; and centering each cell on its median residual (step 13) makes the most common copy-number level of that cell the neutral state. When most of the genome is unaltered, as in many tumours, this level corresponds to the normal (diploid) dosage; in a highly aneuploid tumour, for example a near-triploid one, it does not: chromosomes at the dominant level appear neutral, and chromosomes at two copies appear as losses. And they are nominal: the h-spike assumes that expression scales in proportion to copy number, whereas dosage effects on expression in real tumours can be weaker or gene-dependent, so a state label describes the calibration level that best matches the observed signal rather than a measured copy number. For groups of cells, emission standard deviations are scaled for group size by a fit of log standard deviation on log number of cells, from resampling 1--100 h-spike cells.
 
+\placefloat{fig:2}
+
 A simpler three-state HMM (\texttt{HMM\_type\ =\ "i3"}; loss, neutral, gain) does not use the h-spike. Its neutral state has the mean $\mu$ and standard deviation $\sigma$ of the single-cell reference residuals. The loss and gain means are placed at $\mu \mp 1.645\sigma$, the one-sided 5\% point (\texttt{HMM\_i3\_pval\ =\ 0.05}). All three states share $\sigma$, which, unlike in the i6 model, is not scaled with the number of cells averaged; i3 is therefore conservative for large subclusters. Optionally, the shift is instead set by a Kolmogorov--Smirnov criterion, as in HoneyBADGER.
 
 For both models, transitions between states have probability \texttt{HMM\_transition\_prob\ =\ 1e-6}. Each chromosome is decoded with a Viterbi algorithm adapted from the HiddenMarkov package \citep{hiddenmarkov}, with a modified emission term. All states share the median of the state standard deviations. The emission score of a state is derived from the one-sided normal tail probability of the observed residual under that state and normalised over the states (Supplementary Methods, Eq.~\ref{eq:emission}). This score measures the relative support for each state, and it decays more slowly with distance than a normal density, so single outlying genes rarely break a segment. A region is a maximal run of genes on a chromosome with the same state in a group of cells. Regions are reported per subcluster, per cell, or as a consensus (\texttt{HMM\_report\_by}). The HMM is off by default (\texttt{HMM\ =\ FALSE}).
 
-\subsection{Bayesian filtering of HMM calls}
+\subsubsection{Bayesian filtering of HMM calls}
 
 The HMM does not say how confident its assignments are. Following HoneyBADGER \citep{fan2018}, inferCNV evaluates each predicted CNA region with a Bayesian latent mixture model. Each region is modelled with the cells of the subcluster (or group) in which it was called. Each cell has a latent state drawn from a categorical distribution, with a flat Dirichlet prior on the mixing proportions. The residual expression of each gene of the region in that cell is normal, with the mean and precision of the cell's state fixed at the single-cell values of the HMM calibration (Supplementary Fig.~\ref{fig:Smodels}c). The model is fitted by Gibbs sampling in JAGS through rjags \citep{plummer2003jags, rjags}, with one chain per state (six for i6, three for i3), each started with all cells in that state. Each chain runs 500 adaptation, 200 burn-in and 1,000 sampling iterations, and regions are processed in parallel. The posterior mean of the mixing proportions gives each state's probability for the region, which is essentially the fraction of the region's cells best explained by that state. The posterior of each cell's state gives per-cell probabilities.
 
@@ -63,7 +67,7 @@ Regions whose posterior probability of the neutral state exceeds \texttt{BayesMa
 
 The region-level posterior probability of the neutral state approximates the fraction of a subcluster's cells that look neutral (Supplementary Fig.~\ref{fig:S2}). In the example data no region exceeded the default threshold of 0.5. The 12 small 3-copy calls that were removed had the neutral state as their most probable state and were reset by the reassignment step. Lower thresholds remove the remaining low-amplitude gains: 35 of 72 regions remain at 0.3 and 21 at 0.2, and the 1p/19q co-deletion and the large clonal events are retained at all thresholds.
 
-\subsection{Denoising and outputs}
+\subsubsection{Denoising and outputs}
 
 Denoising (\texttt{denoise\ =\ TRUE}; off by default) clarifies the residual heatmap: values within the reference mean ± 1.5 times the mean per-cell standard deviation of the reference cells (\texttt{sd\_amplifier}) are set to the reference mean (≈1), so that only deviations larger than those in normal cells remain. A fixed half-width (\texttt{noise\_filter}) or logistic shrinkage (\texttt{noise\_logistic}) can be used instead. Denoising does not affect the HMM calls. A median filter (\texttt{apply\_median\_filtering}) is a separate function outside \texttt{run()}.
 
@@ -71,10 +75,11 @@ Outputs are heatmaps (PNG or PDF; per step with \texttt{plot\_steps}), region an
 
 With the default setting (\texttt{sd\_amplifier = 1.5}), 86\% of the reference-cell values and 69\% of the malignant-cell values fall within the noise band and are set to the reference mean, so that arm-level CNAs stand out (Supplementary Fig.~\ref{fig:S4}). A wider band (\texttt{sd\_amplifier = 3}) keeps only the strongest events. Logistic shrinkage replaces the hard cut-off with a gradual one. The median filter, applied after \texttt{run()} within each subcluster, gives the smoothest display, at the cost of single-cell detail.
 
-\subsection{Engineering}
+\subsubsection{Engineering}
 
 Subclustering, the HMM and the Bayesian model use multiple cores (\texttt{num\_threads}, default 4). Each step can save a checkpoint; with \texttt{resume\_mode\ =\ TRUE} (default), a rerun in the same output directory reuses every checkpoint whose recorded parameters match and recomputes only what has changed, so that later settings, such as those of the HMM or denoising, can be revised cheaply. \texttt{up\_to\_step} stops a run after a given step.
 
 The h-spike simulation, Leiden clustering, random-tree permutations and the Bayesian model's Markov chain Monte Carlo are stochastic. (Subsampling of large groups with \texttt{max\_cells\_per\_group} happens earlier, in \texttt{CreateInfercnvObject()}, and is controlled by R's random seed at that point.) When \texttt{seed} is set, \texttt{run()} switches R to the L'Ecuyer-CMRG generator so that parallel workers draw from reproducible random-number streams, seeds each JAGS chain from R's generator, and restores the caller's random-number state on exit. Results are reproducible for a fixed \texttt{seed} and \texttt{num\_threads}: repeated runs with \texttt{seed = 1} and 4 threads produced byte-identical outputs at every step, including the Bayesian filter, whereas a different seed changed the predicted regions slightly. With \texttt{seed\ =\ NULL} (default), results vary slightly between runs.
 
 A Docker image with all dependencies is provided (trinityctat/infercnv).
+

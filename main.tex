@@ -42,6 +42,12 @@
 % editing notes: \todo{...} shows in red; remove before submission
 \newcommand{\todo}[1]{\textcolor{red}{[#1]}}
 
+% Genome Biology style: unnumbered section headings
+\setcounter{secnumdepth}{0}
+
+% figure and table floats as macros, placed in the text with \placefloat{<label>}
+\input{sections/figure_defs}
+
 \title{inferCNV: inferring copy number alterations from single-cell transcriptomes}
 
 \author[1]{Christophe Georgescu}
@@ -65,23 +71,29 @@
 \input{sections/abstract}
 \end{abstract}
 
-\input{sections/introduction}
-\input{sections/implementation}
+\noindent\textbf{Keywords:} copy number alteration, single-cell RNA-seq, tumour heterogeneity, hidden Markov model, spatial transcriptomics, long-read sequencing
+
+% ---- main text (Genome Biology order: Background, Results, Discussion, Conclusions, Methods)
+\input{sections/introduction}      % Background
+\section{Results}\label{sec:results}
+\input{sections/implementation}    % first Results subsection: the algorithm
 \input{sections/results}
 \input{sections/discussion}
-\input{sections/availability}
+\input{sections/conclusions}
 \input{sections/methods}
-\input{sections/supplementary_methods}
-\input{sections/supp_models}
+
+% ---- back matter
+\input{sections/supplementary_information}
 \input{sections/acknowledgements}
 \input{sections/author_contributions}
-\input{sections/competing_interests}
+\input{sections/funding}
+\input{sections/availability}      % Availability of data and materials
+\input{sections/declarations}      % ethics, consent, competing interests
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
 
-\clearpage
-\input{sections/figures}
-\SuppModelsFigure
+% ---- Additional file 1: Supplementary Methods, Figures S1-S7, Tables S1-S2
+\input{sections/additional_file1}
 
 \end{document}
