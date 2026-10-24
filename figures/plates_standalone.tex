@@ -1,4 +1,4 @@
-% Standalone build of the model diagrams of Supplementary Fig. \ref{fig:Smodels}.
+% Standalone build of the model diagrams of Supplementary Figs. \ref{fig:Smodels} and \ref{fig:Sallele}.
 % Compile from latex/figures/:
 %   latexmk -pdf -interaction=nonstopmode plates_standalone.tex
 %   pdftoppm -png -r 200 plates_standalone.pdf plates_standalone
@@ -11,16 +11,33 @@
 \providecommand{\ref}[1]{#1}
 \begin{document}
 \input{plates_tikz}
-\begin{minipage}[t]{0.39\linewidth}
-  \textbf{a}\quad h-spike simulator\\[2pt]
+\begin{minipage}[t]{0.48\linewidth}
+  \textbf{a}\quad h-spike simulator (i6)\\[2pt]
   \PlateHspike
 \end{minipage}\hfill
-\begin{minipage}[t]{0.29\linewidth}
-  \textbf{b}\quad hidden Markov model\\[2pt]
-  \PlateHMM
-\end{minipage}\hfill
-\begin{minipage}[t]{0.29\linewidth}
-  \textbf{c}\quad Bayesian latent mixture\\[2pt]
+\begin{minipage}[t]{0.48\linewidth}
+  \textbf{b}\quad six-state HMM (i6)\\[2pt]
+  \PlateHMMsix\\[12pt]
+  \textbf{c}\quad three-state HMM (i3)\\[2pt]
+  \PlateHMMthree
+\end{minipage}\\[10pt]
+\begin{minipage}[t]{0.6\linewidth}
+  \textbf{d}\quad Bayesian latent mixture (i6 and i3)\\[2pt]
   \PlateBayes
+\end{minipage}
+
+\vspace{24pt}\hrule\vspace{12pt}
+
+\begin{minipage}[t]{0.44\linewidth}
+  \textbf{a}\quad allele HMM\\[2pt]
+  \PlateAlleleHMM
+\end{minipage}\hfill
+\begin{minipage}[t]{0.52\linewidth}
+  \textbf{b}\quad allele-only mixture\\[2pt]
+  \PlateAlleleMix
+\end{minipage}\\[10pt]
+\begin{minipage}[t]{\linewidth}
+  \textbf{c}\quad combined expression and allele mixture\\[2pt]
+  \PlateCombined
 \end{minipage}
 \end{document}

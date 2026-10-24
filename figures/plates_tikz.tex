@@ -53,10 +53,9 @@
 \end{tikzpicture}}
 
 % ------------------------------------------------------------------
-% (b) HMM on one chromosome of one cell group c
+% HMM chain on one chromosome of one cell group c (shared by the i6 and i3 diagrams)
 % ------------------------------------------------------------------
-\newcommand{\PlateHMM}{%
-\begin{tikzpicture}[node distance=0.45cm and 0.6cm, mnode]
+\newcommand{\HMMchain}{%
   \node[const]                          (delta) {$\delta$};
   \node[latent, below=0.5cm of delta]   (s1) {$s_1$};
   \node[latent, below=of s1]            (s2) {$s_2$};
@@ -71,15 +70,40 @@
   \draw[->] (s1) -- node[left, font=\scriptsize] {$A$} (s2);
   \draw[->] (s2) -- node[left, font=\scriptsize] {$A$} (s3);
   \edge{s1}{x1}; \edge{s2}{x2}; \edge{s3}{x3}; \edge{sL}{xL};
-  \plate[inner sep=0.2cm]{chr}{(s1)(sL)(x1)(xL)}{$i=1,\dots,L$}
-  \node[const, right=0.35cm of chr.east, align=center] (par) {$\mu_k$\\$\sigma_k(n_c)$};
+  \plate[inner sep=0.2cm]{chr}{(s1)(sL)(x1)(xL)}{$i=1,\dots,L$}}
+
+% ------------------------------------------------------------------
+% (b) six-state HMM (i6): emission parameters from the h-spike
+% ------------------------------------------------------------------
+\newcommand{\PlateHMMsix}{%
+\begin{tikzpicture}[node distance=0.45cm and 0.6cm, mnode]
+  \HMMchain
+  \node[const, right=0.5cm of chr.east, align=center] (par) {$\mu_k$\\$\sigma_k(n_c)$};
   \edge{par}{x1}; \edge{par}{x2}; \edge{par}{x3}; \edge{par}{xL};
   \plate[inner sep=0.26cm]{grp}{(chr)(delta)(par)}{group $c$; chromosomes}
-  \node[note, below=0.1cm of grp, text width=4.4cm] {$\bar x_{ic}$: mean residual of the $n_c$ cells of group $c$ at gene $i$; $s_i\in\{1,\dots,K\}$; $A_{kk}=1-(K-1)t$, $A_{kl}=t$.};
+  \node[note, below=0.1cm of grp, text width=4.4cm] {$K=6$ states, $k=3$ neutral; $\mu_k$, $\sigma_k(n_c)$ from the h-spike (a); $\bar x_{ic}$: mean residual of the $n_c$ cells of group $c$ at gene $i$; $A_{kk}=1-5t$, $A_{kl}=t$.};
 \end{tikzpicture}}
 
 % ------------------------------------------------------------------
-% (c) Bayesian latent mixture model for one HMM region r
+% (c) three-state HMM (i3): emission parameters from the reference residuals
+% ------------------------------------------------------------------
+\newcommand{\PlateHMMthree}{%
+\begin{tikzpicture}[node distance=0.45cm and 0.6cm, mnode]
+  \HMMchain
+  \node[det, right=0.5cm of chr.east] (par) {$\mu_k,\sigma$};
+  \node[det, right=0.5cm of par, yshift=0.9cm]  (mus) {$\mu,\sigma$};
+  \node[det, right=0.5cm of par, yshift=-0.9cm] (Del) {$\Delta$};
+  \node[obs, above=0.5cm of mus]                (R)   {$R$};
+  \node[note, above=0.02cm of R, align=center] {reference\\residuals};
+  \node[const, below=0.45cm of Del]             (pv)  {$p$};
+  \edge{R}{mus}; \edge{mus}{Del}; \edge{pv}{Del}; \edge{mus}{par}; \edge{Del}{par};
+  \edge{par}{x1}; \edge{par}{x2}; \edge{par}{x3}; \edge{par}{xL};
+  \plate[inner sep=0.26cm]{grp}{(chr)(delta)}{group $c$; chromosomes}
+  \node[note, below=0.1cm of grp, text width=4.6cm] {$K=3$ states (loss, neutral, gain) with means $\mu-\Delta,\ \mu,\ \mu+\Delta$ and common $\sigma$, not scaled with $n_c$; $\Delta=\sigma\Phi^{-1}(1-p)$ or the KS shift; $A_{kk}=1-2t$.};
+\end{tikzpicture}}
+
+% ------------------------------------------------------------------
+% (d) Bayesian latent mixture model for one HMM region r (i6 and i3)
 % ------------------------------------------------------------------
 \newcommand{\PlateBayes}{%
 \begin{tikzpicture}[node distance=0.5cm and 0.8cm, mnode]
@@ -97,4 +121,96 @@
   \edge{mu}{x}; \edge{tau}{x};
   \plate[inner sep=0.14cm]{K}{(mu)(tau)}{$K$ states}
   \node[note, below=0.1cm of region, text width=4.4cm] {$\mu_k$, $\tau_k=\sigma_k^{-2}$ fixed (i6: single-cell h-spike values; i3: $\mu\mp\Delta$, $\mu$, $\sigma$). $P_r(k)=\mathbb E[\theta_k\mid x]$, $P_{rj}(k)=\Pr(\varepsilon_j=k\mid x)$.};
+\end{tikzpicture}}
+
+% ==================================================================
+% Allele-aware models (Supplementary Fig. \ref{fig:Sallele})
+% ==================================================================
+
+% ------------------------------------------------------------------
+% (a) allele HMM on one chromosome of one subcluster c (step 23)
+% ------------------------------------------------------------------
+\newcommand{\PlateAlleleHMM}{%
+\begin{tikzpicture}[node distance=0.45cm and 0.55cm, mnode]
+  \node[const]                          (delta) {$\delta$};
+  \node[latent, below=0.5cm of delta]   (z1) {$z_1$};
+  \node[latent, below=of z1]            (z2) {$z_2$};
+  \node[below=0.2cm of z2]              (dots) {$\vdots$};
+  \node[latent, below=0.2cm of dots]    (zL) {$z_L$};
+  \node[obs, right=of z1] (m1) {$m_{1c}$};
+  \node[obs, right=of z2] (m2) {$m_{2c}$};
+  \node[obs, right=of zL] (mL) {$m_{Lc}$};
+  \edge{delta}{z1}; \edge{z2}{dots}; \edge{dots}{zL};
+  \draw[->] (z1) -- node[left, font=\scriptsize] {$A$} (z2);
+  \edge{z1}{m1}; \edge{z2}{m2}; \edge{zL}{mL};
+  \node[obs, right=0.45cm of m1] (N1) {$N_{1c}$};
+  \node[obs, right=0.45cm of m2] (N2) {$N_{2c}$};
+  \node[obs, right=0.45cm of mL] (NL) {$N_{Lc}$};
+  \edge{N1}{m1}; \edge{N2}{m2}; \edge{NL}{mL};
+  \node[below=0.35cm of mL, inner sep=0pt, minimum size=0pt] (padL) {};
+  \plate[inner sep=0.2cm]{chr}{(z1)(zL)(m1)(mL)(N1)(NL)(padL)}{SNPs $s=1,\dots,L$}
+  \node[const, right=0.5cm of chr.east] (pp) {$p_{\mathrm{d}},p_{\mathrm{n}}$};
+  \coordinate (bus) at ($(chr.east)+(0.2,0)$);
+  \draw (pp.west) -- (bus);
+  \draw[->] (bus) |- ($(m1.north)+(0,0.3)$) -- (m1.north);
+  \draw[->] (bus) |- ($(mL.south)+(0,-0.25)$) -- (mL.south);
+  \plate[inner sep=0.26cm]{grp}{(chr)(delta)(pp)}{subcluster $c$; chromosomes}
+  \node[note, below=0.1cm of grp, text width=5.0cm] {$z_s\in\{$imbalanced, balanced$\}$; of the $N_{sc}$ cells of $c$ covering SNP $s$, $m_{sc}$ show the lesser allele: $m_{sc}\sim\mathrm{Bin}(N_{sc}, p_{z_s})$, $p_{\mathrm d}=0.1$, $p_{\mathrm n}=0.45$; $A_{kk}=1-t$; $\delta=(\tfrac12,\tfrac12)$.};
+\end{tikzpicture}}
+
+% ------------------------------------------------------------------
+% (b) allele-only Bayesian mixture for one allele-HMM region r (step 24)
+% ------------------------------------------------------------------
+\newcommand{\PlateAlleleMix}{%
+\begin{tikzpicture}[node distance=0.5cm and 0.6cm, mnode]
+  \node[const]                          (alpha) {$\alpha=(1,1)$};
+  \node[latent, below=0.4cm of alpha]   (theta) {$\theta$};
+  \node[latent, below=of theta]         (eps)   {$\varepsilon_j$};
+  \node[latent, below=of eps]           (f)     {$f_j$};
+  \node[det, below=0.6cm of f]          (p)     {$p_{sj}$};
+  \node[obs, below=0.5cm of p]          (r)     {$r_{sj}$};
+  \node[obs, left=0.5cm of r]           (n)     {$n_{sj}$};
+  \edge{alpha}{theta}; \edge{theta}{eps}; \edge{eps}{f}; \edge{f}{p}; \edge{p}{r}; \edge{n}{r};
+  \plate[inner sep=0.14cm]{snpsin}{(p)(r)(n)}{$s\in S_r$}
+  \plate[inner sep=0.22cm]{cells}{(eps)(f)(snpsin)}{$j\in C_r$}
+  \node[latent, right=1.3cm of p]       (a)     {$a_s$};
+  \plate[inner sep=0.14cm]{snpsout}{(a)}{$s\in S_r$}
+  \edge{a}{p};
+  \node[const, right=1.3cm of r]        (kap)   {$\kappa$};
+  \node[note, below=0.05cm of kap, align=center] {fitted on\\reference cells};
+  \edge{kap}{r};
+  \plate[inner sep=0.3cm]{region}{(theta)(cells)(snpsout)}{region $r$}
+  \node[note, below=0.1cm of region, text width=5.2cm] {$\varepsilon_j\in\{$imbalanced, balanced$\}$; $f_j$: expected lesser-allele fraction of the cell's genotype (imbalanced: $\epsilon$, $\tfrac13$ or $\tfrac14$; balanced: $\tfrac12$); $a_s$: which allele of SNP $s$ is in the minority, shared by all cells; $p_{sj}=f_j$ if $a_s=1$, else $1-f_j$; $r_{sj}\sim\mathrm{BetaBin}(n_{sj},\kappa p_{sj},\kappa(1-p_{sj}))$.};
+\end{tikzpicture}}
+
+% ------------------------------------------------------------------
+% (c) combined expression + allele Bayesian mixture for one fused region r (step 27)
+% ------------------------------------------------------------------
+\newcommand{\PlateCombined}{%
+\begin{tikzpicture}[node distance=0.5cm and 0.6cm, mnode]
+  \node[const]                          (alpha) {$\alpha=(1,\dots,1)$};
+  \node[latent, below=0.4cm of alpha]   (theta) {$\theta$};
+  \node[latent, below=of theta]         (eps)   {$\varepsilon_j$};
+  \node[latent, below=of eps]           (f)     {$f_j$};
+  \node[det, below=0.6cm of f]          (p)     {$p_{sj}$};
+  \node[obs, below=0.5cm of p]          (r)     {$r_{sj}$};
+  \node[obs, left=0.5cm of r]           (n)     {$n_{sj}$};
+  \node[obs, left=1.1cm of f]           (x)     {$\bar x_j$};
+  \edge{alpha}{theta}; \edge{theta}{eps}; \edge{eps}{f}; \edge{f}{p}; \edge{p}{r}; \edge{n}{r};
+  \edge{eps}{x};
+  \plate[inner sep=0.14cm]{snpsin}{(p)(r)(n)}{$s\in S_r$}
+  \plate[inner sep=0.22cm]{cells}{(eps)(f)(snpsin)(x)}{$j\in C_r$}
+  \node[latent, right=1.3cm of p]       (a)     {$a_s$};
+  \plate[inner sep=0.14cm]{snpsout}{(a)}{$s\in S_r$}
+  \edge{a}{p};
+  \node[const, right=1.3cm of r]        (kap)   {$\kappa$};
+  \edge{kap}{r};
+  \plate[inner sep=0.3cm]{region}{(theta)(cells)(snpsout)}{region $r$}
+  % expression parameters
+  \node[const, left=1.6cm of x, yshift=0.7cm, align=center] (mu) {$\mu_k,\sigma_k$};
+  \node[note, left=0.05cm of mu, align=right] {h-spike (i6) or\\reference (i3)};
+  \node[obs, left=1.6cm of x, yshift=-0.9cm] (sref) {$s_r$};
+  \node[note, left=0.05cm of sref, align=right] {spread of the\\region mean in\\reference cells};
+  \edge{mu}{x}; \edge{sref}{x};
+  \node[note, below=0.1cm of region, text width=6.6cm] {$\varepsilon_j$: copy-number state (i6: 0, 1, 2, 3, 4, $\geq$5 copies and copy-neutral LOH; i3: loss, neutral, gain, copy-neutral LOH); $f_j$: lesser-allele fraction of one of the state's genotypes (e.g.\ 3 copies: $\tfrac13$; LOH and 1 copy: $\epsilon$); $\bar x_j$: the cell's mean residual over the region's genes, $\bar x_j\sim\mathcal N\big(\mu_{\varepsilon_j},\,(s_r\sigma_{\varepsilon_j}/\sigma_{\mathrm{neutral}})^2\big)$; allele terms as in b.};
 \end{tikzpicture}}
