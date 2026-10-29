@@ -87,6 +87,15 @@
 \label{fig:8}
 \end{figure}}
 
+% fig:9
+\expandafter\long\expandafter\def\csname float@fig:9\endcsname{%
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=\textwidth]{figures/fig9_resolution.png}
+\caption{\textbf{Bin size, gene density and reliability of HMM calls in Visium HD data.} All runs use the default \texttt{cutoff\ =\ "auto"} unless stated. (a) 10x Visium HD colorectal tumour P5 at 32-, 16- and 8-\textmu m bins: fraction of tumour bins called gain (red, up) or loss (blue, down) by the HMM along chromosomes 1--22, with the number of genes kept. (b) Mean HMM state, relative to two copies, over chromosome 14 (20--105~Mb) for each tumour bin of P5. A gain of chromosome 14 defines a subclone at each bin size. (c) Null false-call rate (the fraction of genes $\times$ bins called in random groups of reference bins; \texttt{HMM\_null\_fpr\_check}) against the median number of genes per chromosome after the expression filter, at a cutoff of 0.1 (open) and at \texttt{"auto"} (filled), for 22 runs: 10x tumours P1, P2 and P5, 10x normal colon P3, and Kinnex colon, breast and tonsil, at three bin sizes, and P2 segmented cells. Lines join the two runs of each data set; dashed lines mark the warning (5\%) and stop (15\%) thresholds. (d) Correlation of each run's tumour (or epithelial) residual profile with the 32-\textmu m run of the same section, over 5-Mb windows, against the median count per observation bin, at the two cutoffs.}
+\label{fig:9}
+\end{figure}}
+
 % fig:S1
 \expandafter\long\expandafter\def\csname float@fig:S1\endcsname{%
 \begin{figure}[p]
@@ -172,4 +181,13 @@ BCC06post & CNV, this study  & 0.41 & 0.33 & 0.48 & 0.24 & 0.33 & 0.62 & 0.58 & 
 \includegraphics[width=\textwidth]{figures/figS_state_examples.png}
 \caption{\textbf{Observed residuals of HMM-called events against the i6 emission densities, by called state.} Events from the Smart-seq2 data sets (oligodendroglioma; glioblastoma with the GTEx or the oligodendrocyte plus GTEx reference; melanoma; H3K27M glioma), grouped by the called i6 state (rows: 0, 1, 3, 4 and $\geq$5 copies). Each event pools the cells and genes of the HMM-called regions of that state (after Bayesian filtering) over the subclusters of a tumour (subclusters of $\geq$10 cells, except in the 0-copy row). Top of each panel, density of the single-cell residuals before denoising (filled; vertical line, mean) against the six emission densities of that run's h-spike (dashed, coloured by state; clipped at the top). Bottom, per-gene mean residual of the same cells along the chromosome (event genes coloured; dashed lines, emission means). DNA, copy number of the BCH869 clones from bulk whole-genome sequencing \citep{filbin2018, huang2024xclone}. For calls of 1 to 4 copies, the residuals centre on the emission of the called state. High-level gains are compressed: the $\geq$5-copy state is open-ended, its emission mean is only 1.36 in the glioblastoma run with scaled data (5d), observed residuals can lie beyond it (5c), and focal amplicons are diluted by smoothing. Uniform gains can be split between adjacent states: 1q of BCH869, 5 copies by DNA, is called as alternating 3-, 4- and $\geq$5-copy segments (only the $\geq$5 segments are shown in 5a), and the 3-copy gain of chromosome 7 is partly called 4 copies (4c). All 0-copy calls come from subclusters of one to five cells, with residuals between the 0- and 1-copy emissions; in subclusters of four or fewer cells the Bayesian filter cannot reset a region to neutral (Supplementary Methods), which is why these calls survive. No homozygous deletion, including of \textit{CDKN2A}, was called. The 10x data sets are not shown because only their denoised residuals were saved.}
 \label{fig:S6}
+\end{figure}}
+
+% fig:Sres
+\expandafter\long\expandafter\def\csname float@fig:Sres\endcsname{%
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/figS_resolution_profiles.png}
+\caption{\textbf{Tumour profiles at three Visium HD bin sizes.} As Fig.~\ref{fig:9}a (\texttt{cutoff\ =\ "auto"}), for the 10x colorectal tumours P1 (a) and P2 (b; with the segmented cells of P2) and the Kinnex colon adenocarcinoma (c) and breast infiltrating ductal carcinoma (d), with bins labelled by marker panels and one reference group per cell type. Fraction of tumour bins called gain (red, up) or loss (blue, down) along chromosomes 1--22, with the number of genes kept.}
+\label{fig:Sres}
 \end{figure}}
