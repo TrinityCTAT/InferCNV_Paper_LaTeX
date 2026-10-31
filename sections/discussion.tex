@@ -24,7 +24,7 @@ These results lead to a few practical recommendations.
 \tightlist
 \item Choose the reference with care. Use normal cells from the same samples and platform, include the lineage of the cells of interest (normal epithelium for carcinomas), and give one reference group per cell type. Pooled references, references of other lineages and references from other data sets or bulk RNA-seq produce false calls.
 \item Estimate the false-call rate on your own data where possible, by analysing half of each normal cell type against the other half, and treat calls in regions where an observed cell type's expression differs from the reference along the genome with caution.
-\item Use subcluster-level calls rather than per-cell calls. With small data sets, \texttt{random\_trees} subclustering better approximates the number of subclones.
+\item Use subcluster-level calls rather than per-cell calls. With small data sets, \texttt{random\_trees} subclustering better approximates the number of subclones. Subclones smaller than the automatic minimum subcluster size (5--10 cells for the Smart-seq2 data here, more for shallow data) are merged into larger subclusters; resolving rarer subclones needs deeper data.
 \item Interpret the state labels as relative levels.
 \item For large data sets, skip the Bayesian filter, use the three-state HMM or subsample cell groups.
 \end{itemize}
