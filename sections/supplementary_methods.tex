@@ -133,7 +133,7 @@ Parameter & Default & Meaning \\
 \endlastfoot
 \multicolumn{3}{@{}l}{\textbf{Inputs and filtering}}\\
 \texttt{out\_dir} & \texttt{NULL} & Output directory; required. \\
-\texttt{cutoff} & \texttt{"auto"} & Minimum mean count of a gene over all cells (step 2); \texttt{"auto"} chooses it from the data. \\
+\texttt{cutoff} & \texttt{"auto"} & Minimum mean count of a gene over all cells (step 2); \texttt{"auto"} chooses it from the data, with the mean over the observations. \\
 \texttt{min\_cells\_per\_gene} & \texttt{3} & Minimum number of cells, over all cells, with a nonzero count (step 2). \\
 \texttt{min\_max\_counts\_per\_cell}$^\dagger$ & \texttt{c(100, +Inf)} & Range of total counts for a cell to be kept. \\
 \texttt{chr\_exclude}$^\dagger$ & \texttt{c(\sq chrX\sq, \sq chrY\sq, \sq chrM\sq)} & Chromosomes whose genes are removed. \\
